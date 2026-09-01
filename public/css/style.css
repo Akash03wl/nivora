@@ -1,0 +1,41 @@
+/* NIVORA — Design System (Fase 1) */
+:root {
+  --bg: #0B1220;
+  --surface: #111C2E;
+  --card: #16213A;
+  --card-2: #1E2E4A;
+  --border: rgba(255,255,255,0.08);
+  --text: #EEF2FF;
+  --muted: #94A3B8;
+  --primary: #2D7FF9;
+  --secondary: #0EA67B;
+  --gradient: linear-gradient(135deg, #2D7FF9, #0EA67B);
+  --success: #10B981;
+  --error: #EF4444;
+  --warning: #F59E0B;
+  --radius: 16px;
+  --font-title: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  --font-body: Inter, system-ui, sans-serif;
+}
+html[data-theme="light"] {
+  --bg: #F1F5F9; --surface:#FFF; --card:#FFF; --card-2:#F8FAFC;
+  --border: rgba(15,42,68,0.10); --text:#0F172A; --muted:#64748B;
+  --primary:#1E4A8A; --secondary:#0E9F6E;
+  --gradient: linear-gradient(135deg, #1E4A8A, #0E9F6E);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height:100vh; display:flex; flex-direction:column; align-items:center; }
+.container { width:100%; max-width:1080px; padding:0 20px; margin:0 auto; }
+.navbar { position:sticky; top:0; width:100%; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(10px); border-bottom:1px solid var(--border); z-index:10; }
+.nav-inner { max-width:1080px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+.logo { display:flex; align-items:center; gap:10px; font-family: var(--font-title); font-weight:800; letter-spacing:-0.03em; }
+.logo-mark { width:36px; height:36px; border-radius:10px; background: var(--gradient); display:flex; align-items:center; justify-content:center; }
+.hero { margin-top:28px; background: var(--card); border:1px solid var(--border); border-radius:20px; padding:32px; display:grid; grid-template-columns:1.2fr 0.8fr; gap:24px; }
+.hero h1 { font-family: var(--font-title); font-size: clamp(1.8rem,4vw,2.6rem); line-height:1.1; }
+.text-gradient { background: var(--gradient); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.badge { display:inline-block; background: var(--card-2); border:1px solid var(--border); padding:6px 12px; border-radius:999px; font-size:0.78rem; font-weight:600; color: var(--secondary); }
+.btn { display:inline-flex; align-items:center; gap:8px; padding:12px 20px; border-radius:999px; font-weight:600; border:none; cursor:pointer; }
+.btn-primary { background: var(--gradient); color:#fff; box-shadow:0 8px 20px rgba(45,127,249,0.3); }
+.card { background: var(--card); border:1px solid var(--border); border-radius: var(--radius); padding:20px; }
+.grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+@media (max-width:860px){ .hero{grid-template-columns:1fr} .grid-3{grid-template-columns:1fr} }

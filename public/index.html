@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="system">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,12 +7,57 @@
   <meta name="description" content="Nivora — Plataforma de estudos e simulados com foco em conhecimento, desempenho e evolução." />
   <meta name="theme-color" content="#0B1220" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap">
+  <link rel="stylesheet" href="/css/style.css" />
 </head>
-<body style="font-family:system-ui;max-width:720px;margin:40px auto;padding:20px">
-  <h1>NIVORA</h1>
-  <p><strong>Aprenda. Supere. Evolua.</strong></p>
-  <p>Projeto novo e independente — Fase 1 (Fundação) pendente.</p>
-  <p>API: <a href="/api/health">/api/health</a></p>
-  <p><em>Este projeto não reutiliza código do quiz-ake-v2.</em></p>
+<body>
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <span class="logo-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 100 100"><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
+        </span>
+        NIVORA
+      </a>
+      <nav style="display:flex; gap:12px; align-items:center">
+        <a href="#salas">Salas</a>
+        <a href="#ranking">Ranking</a>
+        <a href="/api/health" target="_blank">API</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <span class="badge">NIVORA — Plataforma de simulados</span>
+        <h1>Aprenda.<br>Supere. <span class="text-gradient">Evolua.</span></h1>
+        <p style="color:var(--muted); margin:12px 0 20px; line-height:1.6">Plataforma de estudos baseada em simulados, desempenho e evolução do conhecimento. Conhecimento → Prática → Desempenho → Evolução.</p>
+        <div style="display:flex; gap:12px">
+          <button class="btn btn-primary" onclick="alert('Fase 2: autenticação')">Começar agora</button>
+          <a class="btn" style="background:var(--card-2); border:1px solid var(--border)" href="#salas">Explorar salas</a>
+        </div>
+      </div>
+      <div class="card" style="display:flex; align-items:center; justify-content:center; min-height:160px">
+        <div style="text-align:center; color:var(--muted)">Fase 1 — Fundação<br><small>Frontend + Backend + D1 pronto</small></div>
+      </div>
+    </section>
+
+    <section id="salas" style="margin-top:32px">
+      <h2>Salas abertas</h2>
+      <p style="color:var(--muted)">Em breve — Fase 4: criação e publicação de simulados.</p>
+      <div class="grid-3" style="margin-top:16px">
+        <div class="card">Matemática — Função afim<br><small style="color:var(--muted)">10 questões • Médio • 30s</small></div>
+        <div class="card">Português — Interpretação<br><small style="color:var(--muted)">20 questões • Difícil • 45s</small></div>
+        <div class="card">Ciências — Geral<br><small style="color:var(--muted)">15 questões • Fácil • 20s</small></div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="margin-top:40px; padding:20px; text-align:center; color:var(--muted); border-top:1px solid var(--border); width:100%">
+    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 1 Fundação
+  </footer>
+  <script src="/js/app.js" type="module"></script>
 </body>
 </html>
