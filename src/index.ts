@@ -5,6 +5,7 @@
 
 import { Hono } from 'hono';
 import { auth } from './routes/auth.js';
+import { rooms } from './routes/rooms.js';
 
 type Env = {
   DB: D1Database;
@@ -50,8 +51,9 @@ app.get('/api/health', async (c) => {
   });
 });
 
-// Fase 2 — Auth
+// Fase 2 — Auth | Fase 4 — Rooms
 app.route('/api/auth', auth);
+app.route('/api/rooms', rooms);
 
 app.all('/api/*', (c) => c.json({ erro: 'Rota não encontrada' }, 404));
 

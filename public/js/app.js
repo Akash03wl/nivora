@@ -72,3 +72,30 @@ form?.addEventListener('submit', async (e) => {
 setModo('login');
 refreshAuth();
 fetch('/api/health').then(r=>r.json()).then(d=>console.log('health', d)).catch(()=>{});
+
+// Fase 4 — listar salas
+async function carregarSalas() {
+  const container = document.querySelector('#salas .grid-3');
+  if (!container) return;
+  try {
+    const r = await fetch('/api/rooms', { credentials: 'same-origin' });
+    const d = await r.json();
+    const rooms = d.rooms || [];
+    if (!rooms.length) {
+      container.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; color:var(--muted)">Nenhuma sala ativa no momento. Volte em breve!</div>`;
+      return;
+    }
+    container.innerHTML = rooms.map((s) => `
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+          <span style="background:var(--card-2); border:1px solid var(--border); padding:4px 8px; border-radius:999px; font-size:0.72rem">${s.status} • ${s.dificuldade}</span>
+          ${s.codigo ? `<small style="color:var(--muted)">#${s.codigo}</small>` : ''}
+        </div>
+        <strong>${s.nome}</strong><br>
+        <small style="color:var(--muted)">${s.descricao || ''}</small><br>
+        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${JSON.parse(s.assuntos || '[]').join(', ')}</small>
+        <div style="margin-top:10px"><button class="btn btn-primary" style="width:100%" onclick="alert('Execução Fase 6: ${s.nome}')">Entrar</button></div>
+      </div>`).join('');
+  } catch { /* offline */ }
+}
+carregarSalas();
