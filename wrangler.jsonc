@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nivora",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/index.ts",
+  "assets": {
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nivora-db",
+      "database_id": "REPLACE_AFTER_CREATE",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "development",
+    "APP_NAME": "Nivora",
+    "APP_TAGLINE": "Aprenda. Supere. Evolua.",
+    "SITE_URL": "https://nivora.pages.dev",
+    "AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "SCORING_CORRECT": "100",
+    "SCORING_SPEED_MAX": "20"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
