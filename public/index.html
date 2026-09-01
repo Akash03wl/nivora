@@ -23,7 +23,7 @@
       <nav style="display:flex; gap:12px; align-items:center">
         <a href="#salas">Salas</a>
         <a href="#ranking">Ranking</a>
-        <a href="/api/health" target="_blank">API</a>
+        <span id="auth-area" style="display:flex; gap:8px; align-items:center"></span>
       </nav>
     </div>
   </header>
@@ -35,7 +35,7 @@
         <h1>Aprenda.<br>Supere. <span class="text-gradient">Evolua.</span></h1>
         <p style="color:var(--muted); margin:12px 0 20px; line-height:1.6">Plataforma de estudos baseada em simulados, desempenho e evolução do conhecimento. Conhecimento → Prática → Desempenho → Evolução.</p>
         <div style="display:flex; gap:12px">
-          <button class="btn btn-primary" onclick="alert('Fase 2: autenticação')">Começar agora</button>
+          <button class="btn btn-primary" id="btn-comecar">Começar agora</button>
           <a class="btn" style="background:var(--card-2); border:1px solid var(--border)" href="#salas">Explorar salas</a>
         </div>
       </div>
@@ -56,8 +56,28 @@
   </main>
 
   <footer style="margin-top:40px; padding:20px; text-align:center; color:var(--muted); border-top:1px solid var(--border); width:100%">
-    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 1 Fundação
+    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 2 Autenticação
   </footer>
+
+  <!-- Auth modal (Fase 2) -->
+  <dialog id="auth-dialog" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
+    <div style="padding:24px">
+      <h3 id="auth-title" style="font-family:var(--font-title); margin-bottom:12px">Entrar na Nivora</h3>
+      <div style="display:flex; gap:8px; margin-bottom:16px">
+        <button class="btn btn-primary" id="tab-login" style="flex:1">Entrar</button>
+        <button class="btn" id="tab-register" style="flex:1; background:var(--card-2); border:1px solid var(--border)">Criar conta</button>
+      </div>
+      <form id="auth-form" style="display:flex; flex-direction:column; gap:10px">
+        <input id="auth-nick" placeholder="Nick (só cadastro)" style="padding:10px; border:1px solid var(--border); border-radius:8px; display:none" />
+        <input id="auth-email" type="email" placeholder="E-mail" required style="padding:10px; border:1px solid var(--border); border-radius:8px" />
+        <input id="auth-senha" type="password" placeholder="Senha (mín 8)" required style="padding:10px; border:1px solid var(--border); border-radius:8px" />
+        <button class="btn btn-primary" type="submit" id="auth-submit">Entrar</button>
+        <div id="auth-msg" style="font-size:0.85rem; color:var(--error); min-height:1.2em"></div>
+      </form>
+      <button onclick="document.getElementById('auth-dialog').close()" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
+    </div>
+  </dialog>
+
   <script src="/js/app.js" type="module"></script>
 </body>
 </html>

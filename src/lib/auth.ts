@@ -76,4 +76,20 @@ export async function usuarioDaSessao(db: D1Database, req: Request) {
   return user;
 }
 
+export function ehAdmin(u: any): boolean { return !!u && u.papel === 'ADMIN'; }
+
+export function perfilPublico(u: any) {
+  return { id: u.id, nick: u.nick, email: u.email, avatar: u.avatar || null, papel: u.papel, criadoEm: u.criado_em };
+}
+
+export function isSecure(req: Request, env: any): boolean {
+  const proto = new URL(req.url).protocol;
+  return (env && env.ENVIRONMENT === 'production') || proto === 'https:';
+}
+
+export async function revogarSessao(db: D1Database, token: string | null) {
+  if (!token) return;
+  await db.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+}
+
 export { CHAVE_COOKIE };

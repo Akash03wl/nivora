@@ -4,6 +4,7 @@
  */
 
 import { Hono } from 'hono';
+import { auth } from './routes/auth.js';
 
 type Env = {
   DB: D1Database;
@@ -15,11 +16,12 @@ type Env = {
   AI_MODEL?: string;
   AI_API_KEY?: string;
   AI_BASE_URL?: string;
+  ADMIN_EMAIL?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Security headers (Fase 9 antecipado — base)
+// Security headers
 app.use('*', async (c, next) => {
   await next();
   c.header('X-Content-Type-Options', 'nosniff');
@@ -31,7 +33,6 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', async (c) => {
   const env = c.env;
-  // Verifica D1 quando disponível
   let dbOk = false;
   try {
     if (env.DB) {
@@ -49,8 +50,9 @@ app.get('/api/health', async (c) => {
   });
 });
 
-// Placeholder modular — cada fase registra seu router
-// Fase 2: auth, Fase 4: rooms, Fase 5: IA, Fase 6: attempts, Fase 7: scoring, etc.
-app.all('/api/*', (c) => c.json({ erro: 'Rota ainda não implementada — Fase 1 Fundação concluída, aguarde Fase 2 (Auth)' }, 501));
+// Fase 2 — Auth
+app.route('/api/auth', auth);
+
+app.all('/api/*', (c) => c.json({ erro: 'Rota não encontrada' }, 404));
 
 export default app;
