@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import { usuarioDaSessao, ehAdmin } from '../lib/auth.js';
 import { primeira, todas, executar, novoId } from '../lib/db.js';
 import { STATUS, LIMITES } from '../lib/config.js';
+import { AIService, validarLote } from '../lib/ai.js';
+import { checar } from '../lib/rateLimit.js';
 
-type Env = { DB: D1Database; ENVIRONMENT: string };
+type Env = { DB: D1Database; ENVIRONMENT: string; AI?: any; AI_MODEL?: string; AI_API_KEY?: string; AI_BASE_URL?: string };
 
 const VALOR_STATUS = Object.values(STATUS);
 const TRANSICOES: Record<string, string[]> = {
@@ -189,4 +191,116 @@ rooms.post('/:id/status', async (c) => {
   await executar(c.env.DB, 'INSERT INTO admin_logs (id, user_id, acao, alvo_tipo, alvo_id, detalhes) VALUES (?, ?, ?, ?, ?, ?)', novoId('log_'), (chk.user as any).id, 'alterar_status', 'rooms', id, JSON.stringify({ de: atual, para: novo }));
   const atualizada: any = await primeira(c.env.DB, 'SELECT * FROM rooms WHERE id = ?', id);
   return c.json({ room: { ...atualizada, assuntos: JSON.parse(atualizada.assuntos||'[]') } });
+});
+
+// POST /api/rooms/:id/generate — IA gera questões (ADMIN)
+rooms.post('/:id/generate', async (c) => {
+  const chk = await exigirAdmin(c);
+  if ('erro' in chk) return chk.erro;
+  const user: any = chk.user;
+  const id = c.req.param('id');
+  const room: any = await primeira(c.env.DB, 'SELECT * FROM rooms WHERE id = ?', id);
+  if (!room) return c.json({ erro: 'Sala não encontrada.' }, 404);
+  if (![STATUS.DRAFT, STATUS.REVIEW].includes(room.status)) return c.json({ erro: `Só é possível gerar em DRAFT/REVIEW (atual: ${room.status}).` }, 409);
+
+  // Economia: se já tem questões validadas, não regenera sem ?force=1
+  const jaTem = await primeira<{ c: number }>(c.env.DB, 'SELECT COUNT(*) as c FROM questions WHERE room_id = ?', id);
+  const force = c.req.query('force') === '1';
+  if (jaTem && jaTem.c > 0 && !force) {
+    const qs = await todas(c.env.DB, 'SELECT * FROM questions WHERE room_id = ? ORDER BY ordem', id);
+    const comOpts = await Promise.all(qs.map(async (q: any) => {
+      const opts = await todas(c.env.DB, 'SELECT texto FROM question_options WHERE question_id = ? ORDER BY ordem', q.id);
+      return { ...q, alternativas: opts.map((o: any) => o.texto) };
+    }));
+    return c.json({ ok: true, economizado: true, mensagem: 'Questões já existem. Use ?force=1 para regenerar.', questoes: comOpts, provedor: 'cache' });
+  }
+
+  // Rate limit IA: 5/min por admin
+  const lim = await checar(c.env.DB, c.req.raw, 'ia-generate', 5, 60);
+  if (!lim.ok) return c.json({ erro: 'Muitas gerações. Aguarde.' }, 429);
+
+  let materiaNome = 'Geral';
+  if (room.materia_id) {
+    const m: any = await primeira(c.env.DB, 'SELECT nome FROM subjects WHERE id = ?', room.materia_id);
+    if (m) materiaNome = m.nome;
+  }
+  const assuntos = JSON.parse(room.assuntos || '[]') as string[];
+  const quantidade = Number(room.quantidade) || 10;
+  const dificuldade = String(room.dificuldade || 'medio');
+
+  const ai = new AIService(c.env);
+  let resultado: any;
+  try {
+    resultado = await ai.generateQuestions({ materia: materiaNome, assuntos, dificuldade, quantidade });
+  } catch (e: any) {
+    await executar(c.env.DB, 'INSERT INTO ai_generations (id, room_id, provedor, modelo, prompt, resposta_raw, status) VALUES (?, ?, ?, ?, ?, ?, ?)', novoId('ai_'), id, 'erro', String(c.env.AI_MODEL || ''), '', String(e?.message || e), 'falha');
+    return c.json({ erro: 'Falha na IA. Tente novamente.' }, 502);
+  }
+
+  // Validação de schema + conteúdo
+  const valid = validarLote(resultado.questoes);
+  if (!valid.ok) {
+    // tenta regenerar até 3 vezes (economia limitada)
+    let tentativas = 1;
+    let qs = resultado.questoes;
+    while (!validarLote(qs).ok && tentativas < LIMITES.MAX_TENTATIVAS_REGENERACAO) {
+      const reg = await ai.regenerateQuestion({ materia: materiaNome, assuntos, dificuldade, quantidade: 1 });
+      if (reg) qs[0] = reg; // simplificado: substitui primeira inválida
+      tentativas++;
+    }
+    const finalValid = validarLote(qs);
+    if (!finalValid.ok) {
+      await executar(c.env.DB, 'INSERT INTO ai_generations (id, room_id, provedor, modelo, prompt, resposta_raw, status) VALUES (?, ?, ?, ?, ?, ?, ?)', novoId('ai_'), id, resultado.provedor, String(c.env.AI_MODEL || ''), resultado.prompt, resultado.raw, 'falha');
+      return c.json({ erro: finalValid.erro, provedor: resultado.provedor }, 400);
+    }
+    resultado.questoes = qs;
+  }
+
+  // Armazenamento: limpa antigas se force
+  if (force) await executar(c.env.DB, 'DELETE FROM questions WHERE room_id = ?', id);
+
+  // Persiste questões + alternativas
+  for (let i = 0; i < resultado.questoes.length; i++) {
+    const q = resultado.questoes[i];
+    const qid = novoId('q_');
+    await executar(c.env.DB, 'INSERT INTO questions (id, room_id, enunciado, explicacao, dificuldade, assunto, ordem, correta_idx) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', qid, id, q.enunciado, q.explicacao, q.dificuldade, q.assunto, i, q.correta_idx);
+    for (let j = 0; j < q.alternativas.length; j++) {
+      await executar(c.env.DB, 'INSERT INTO question_options (id, question_id, texto, ordem) VALUES (?, ?, ?, ?)', novoId('opt_'), qid, q.alternativas[j], j);
+    }
+  }
+
+  // Auditoria + log
+  await executar(c.env.DB, 'INSERT INTO ai_generations (id, room_id, provedor, modelo, prompt, resposta_raw, status) VALUES (?, ?, ?, ?, ?, ?, ?)', novoId('ai_'), id, resultado.provedor, String(c.env.AI_MODEL || ''), resultado.prompt, resultado.raw, 'sucesso');
+  await executar(c.env.DB, 'INSERT INTO admin_logs (id, user_id, acao, alvo_tipo, alvo_id, detalhes) VALUES (?, ?, ?, ?, ?, ?)', novoId('log_'), user.id, 'gerar_questoes', 'rooms', id, JSON.stringify({ quantidade, provedor: resultado.provedor }));
+  // Move para REVIEW automaticamente se estava DRAFT
+  if (room.status === STATUS.DRAFT) {
+    await executar(c.env.DB, 'UPDATE rooms SET status = ?, atualizado_em = ? WHERE id = ?', STATUS.REVIEW, new Date().toISOString(), id);
+  }
+
+  const qsFinal = await todas(c.env.DB, 'SELECT * FROM questions WHERE room_id = ? ORDER BY ordem', id);
+  return c.json({ ok: true, provedor: resultado.provedor, quantidade: qsFinal.length, questoes: resultado.questoes });
+});
+
+// GET /api/rooms/:id/questions — lista questões (ADMIN vê gabarito, USER só se room ACTIVE e com tentativa? Fase 6 protegerá)
+rooms.get('/:id/questions', async (c) => {
+  const id = c.req.param('id');
+  const room: any = await primeira(c.env.DB, 'SELECT * FROM rooms WHERE id = ?', id);
+  if (!room) return c.json({ erro: 'Sala não encontrada.' }, 404);
+  const user = await usuarioDaSessao(c.env.DB, c.req.raw);
+  const isAdm = !!user && ehAdmin(user);
+  // só ADMIN pode ver gabarito em REVIEW; em ACTIVE, gabarito protegido (Fase 6)
+  if ([STATUS.DRAFT, STATUS.REVIEW].includes(room.status) && !isAdm) return c.json({ erro: 'Sala ainda em revisão.' }, 403);
+  const qs = await todas(c.env.DB, 'SELECT * FROM questions WHERE room_id = ? ORDER BY ordem', id);
+  const comOpts = await Promise.all(qs.map(async (q: any) => {
+    const opts = await todas(c.env.DB, 'SELECT texto, ordem FROM question_options WHERE question_id = ? ORDER BY ordem', q.id);
+    // Em ACTIVE, não expõe correta_idx para não-ADMIN (proteção gabarito)
+    const hide = room.status === STATUS.ACTIVE && !isAdm;
+    return {
+      id: q.id, enunciado: q.enunciado, explicacao: hide ? undefined : q.explicacao,
+      dificuldade: q.dificuldade, assunto: q.assunto, ordem: q.ordem,
+      alternativas: opts.map((o: any) => o.texto),
+      ...(hide ? {} : { correta_idx: q.correta_idx })
+    };
+  }));
+  return c.json({ questoes: comOpts });
 });
