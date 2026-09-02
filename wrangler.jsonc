@@ -16,19 +16,13 @@
 			"database_name": "nivora-db",
 			"database_id": "a32b91a4-a142-45ca-ab5d-0ad8249e87bf",
 			"migrations_dir": "migrations"
-		},
-		{
-			"binding": "nivora_db",
-			"database_name": "nivora-db",
-			"database_id": "a32b91a4-a142-45ca-ab5d-0ad8249e87bf",
-			"remote": true
 		}
 	],
 	"vars": {
-		"ENVIRONMENT": "development",
+		"ENVIRONMENT": "production",
 		"APP_NAME": "Nivora",
 		"APP_TAGLINE": "Aprenda. Supere. Evolua.",
-		"SITE_URL": "https://nivora.app",
+		"SITE_URL": "https://nivora.walacefercundes132.workers.dev",
 		"AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 		"SCORING_CORRECT": "100",
 		"SCORING_SPEED_MAX": "20"
