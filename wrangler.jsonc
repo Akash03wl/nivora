@@ -22,7 +22,7 @@
 		"ENVIRONMENT": "production",
 		"APP_NAME": "Nivora",
 		"APP_TAGLINE": "Aprenda. Supere. Evolua.",
-		"SITE_URL": "https://nivora.pages.dev",
+		"SITE_URL": "https://nivora.walacefercundes132.workers.dev",
 		"AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
 		"SCORING_CORRECT": "100",
 		"SCORING_SPEED_MAX": "20"
