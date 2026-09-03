@@ -24,6 +24,7 @@
       <nav style="display:flex; gap:12px; align-items:center" aria-label="Navegação principal">
         <a href="#salas">Salas</a>
         <a href="#ranking">Ranking</a>
+        <a href="#admin" id="nav-admin" style="display:none; color:var(--primary); font-weight:700">Admin</a>
         <span id="auth-area" style="display:flex; gap:8px; align-items:center" aria-live="polite"></span>
       </nav>
     </div>
@@ -67,6 +68,35 @@
       <div id="salas-error" class="state state-error" style="display:none; margin-top:12px"></div>
       <div id="salas-empty" class="state state-empty" style="display:none; margin-top:12px">
         <p><strong>Nenhuma sala ativa no momento.</strong><br>Volte em breve ou peça para um administrador publicar um simulado.</p>
+      </div>
+    </section>
+
+    <section id="admin" style="display:none; margin-top:40px; border-top:2px solid var(--primary); padding-top:24px" aria-labelledby="admin-title">
+      <h2 id="admin-title" style="font-family:var(--font-title)"><span style="color:var(--primary)">●</span> Painel Admin</h2>
+      <p style="color:var(--muted); margin:8px 0 16px">Gerencie simulados, gere questões com IA e publique salas.</p>
+      
+      <div class="card" style="margin-bottom:20px">
+        <h3 style="margin-bottom:12px">Criar novo simulado</h3>
+        <form id="admin-create-form" style="display:grid; gap:10px; grid-template-columns:1fr 1fr">
+          <input id="admin-nome" class="input" placeholder="Nome (3-80)" required style="grid-column:1/-1" />
+          <input id="admin-desc" class="input" placeholder="Descrição" style="grid-column:1/-1" />
+          <select id="admin-materia" class="input"><option value="">Matéria</option></select>
+          <input id="admin-assuntos" class="input" placeholder="Assuntos separados por vírgula" required />
+          <select id="admin-qtd" class="input"><option value="10">10 questões</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option></select>
+          <select id="admin-dif" class="input"><option value="medio">Médio</option><option value="facil">Fácil</option><option value="dificil">Difícil</option><option value="muito_dificil">Muito difícil</option><option value="personalizado">Personalizado</option></select>
+          <select id="admin-tempo" class="input"><option value="30">30s / questão</option><option value="15">15s</option><option value="45">45s</option><option value="60">60s</option><option value="0">Sem limite</option></select>
+          <button class="btn btn-primary" type="submit" style="grid-column:1/-1">Criar simulado (Rascunho)</button>
+          <div id="admin-create-msg" style="grid-column:1/-1; font-size:0.85rem; min-height:1.2em" aria-live="polite"></div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+          <h3>Salas (todas)</h3>
+          <button class="btn btn-ghost" id="admin-refresh" style="padding:6px 12px; font-size:0.85rem">Atualizar</button>
+        </div>
+        <div id="admin-grid" style="display:flex; flex-direction:column; gap:12px" aria-live="polite"></div>
+        <div id="admin-empty" class="state state-empty" style="display:none; margin-top:12px">Nenhuma sala ainda. Crie a primeira acima.</div>
       </div>
     </section>
   </main>
