@@ -8,6 +8,7 @@ import { auth } from './routes/auth.js';
 import { rooms } from './routes/rooms.js';
 import { attempts } from './routes/attempts.js';
 import { history } from './routes/history.js';
+import { SECURITY_HEADERS } from './lib/security.js';
 
 type Env = {
   DB: D1Database;
@@ -24,14 +25,10 @@ type Env = {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Security headers
+// Security headers — única fonte da verdade (B11)
 app.use('*', async (c, next) => {
   await next();
-  c.header('X-Content-Type-Options', 'nosniff');
-  c.header('X-Frame-Options', 'DENY');
-  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
-  c.header('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'");
-  c.header('Cache-Control', 'no-store');
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) c.header(k, v);
 });
 
 app.get('/api/health', async (c) => {

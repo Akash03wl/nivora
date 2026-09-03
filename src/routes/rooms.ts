@@ -4,6 +4,7 @@ import { primeira, todas, executar, novoId } from '../lib/db.js';
 import { STATUS, LIMITES } from '../lib/config.js';
 import { AIService, validarLote } from '../lib/ai.js';
 import { checar } from '../lib/rateLimit.js';
+import { limparTexto } from '../lib/validation.js';
 
 type Env = { DB: D1Database; ENVIRONMENT: string; AI?: any; AI_MODEL?: string; AI_API_KEY?: string; AI_BASE_URL?: string };
 
@@ -43,15 +44,15 @@ rooms.post('/', async (c) => {
   const user: any = chk.user;
   let body: any = {};
   try { body = await c.req.json(); } catch {}
-  const nome = String(body.nome || body.titulo || '').trim();
-  if (nome.length < 3 || nome.length > LIMITES.MAX_TITULO) return c.json({ erro: 'Nome deve ter 3-80 caracteres.' }, 400);
-  const descricao = String(body.descricao || '').trim().slice(0, LIMITES.MAX_DESCRICAO);
+  const nome = limparTexto(body.nome || body.titulo, LIMITES.MAX_TITULO);
+  if (nome.length < 3) return c.json({ erro: 'Nome deve ter 3-80 caracteres.' }, 400);
+  const descricao = limparTexto(body.descricao, LIMITES.MAX_DESCRICAO);
   const materia_id = body.materia_id ? String(body.materia_id).trim() : null;
   if (materia_id) {
     const m = await primeira(c.env.DB, 'SELECT id FROM subjects WHERE id = ?', materia_id);
     if (!m) return c.json({ erro: 'Matéria não encontrada.' }, 400);
   }
-  const assuntos = Array.isArray(body.assuntos) ? body.assuntos.map((s: any)=>String(s).trim()).filter(Boolean).slice(0, LIMITES.MAX_ASSUNTOS) : [];
+  const assuntos = Array.isArray(body.assuntos) ? body.assuntos.map((s: any)=>limparTexto(s, 40)).filter(Boolean).slice(0, LIMITES.MAX_ASSUNTOS) : [];
   if (!assuntos.length) return c.json({ erro: 'Informe pelo menos um assunto.' }, 400);
   const quantidade = Number(body.quantidade) || 10;
   if (![10,20,30,40,50].includes(quantidade) && (quantidade < LIMITES.MIN_QUESTOES || quantidade > LIMITES.MAX_QUESTOES)) return c.json({ erro: 'Quantidade inválida.' }, 400);
@@ -119,13 +120,13 @@ rooms.patch('/:id', async (c) => {
   const sets: string[] = [];
   const params: unknown[] = [];
   if (body.nome !== undefined) {
-    const n = String(body.nome).trim();
-    if (n.length < 3 || n.length > LIMITES.MAX_TITULO) return c.json({ erro: 'Nome inválido.' }, 400);
+    const n = limparTexto(body.nome, LIMITES.MAX_TITULO);
+    if (n.length < 3) return c.json({ erro: 'Nome inválido.' }, 400);
     sets.push('nome = ?'); params.push(n);
   }
-  if (body.descricao !== undefined) { sets.push('descricao = ?'); params.push(String(body.descricao).trim().slice(0, LIMITES.MAX_DESCRICAO)); }
+  if (body.descricao !== undefined) { sets.push('descricao = ?'); params.push(limparTexto(body.descricao, LIMITES.MAX_DESCRICAO)); }
   if (body.assuntos !== undefined) {
-    const a = Array.isArray(body.assuntos) ? body.assuntos.map((s:any)=>String(s).trim()).filter(Boolean).slice(0, LIMITES.MAX_ASSUNTOS) : [];
+    const a = Array.isArray(body.assuntos) ? body.assuntos.map((s:any)=>limparTexto(s, 40)).filter(Boolean).slice(0, LIMITES.MAX_ASSUNTOS) : [];
     if (!a.length) return c.json({ erro: 'Assuntos inválidos.' }, 400);
     sets.push('assuntos = ?'); params.push(JSON.stringify(a));
   }
@@ -280,7 +281,8 @@ rooms.post('/:id/generate', async (c) => {
   }
 
   const qsFinal = await todas(c.env.DB, 'SELECT * FROM questions WHERE room_id = ? ORDER BY ordem', id);
-  return c.json({ ok: true, provedor: resultado.provedor, quantidade: qsFinal.length, questoes: resultado.questoes });
+  const aviso = resultado.provedor === 'mock-local' ? 'Nenhum provedor de IA configurado — questões genéricas geradas localmente. Revise antes de publicar.' : undefined;
+  return c.json({ ok: true, provedor: resultado.provedor, quantidade: qsFinal.length, questoes: resultado.questoes, ...(aviso ? { aviso } : {}) });
 });
 
 // GET /api/rooms/:id/questions — lista questões (ADMIN vê gabarito, USER só se room ACTIVE e com tentativa? Fase 6 protegerá)
@@ -290,13 +292,13 @@ rooms.get('/:id/questions', async (c) => {
   if (!room) return c.json({ erro: 'Sala não encontrada.' }, 404);
   const user = await usuarioDaSessao(c.env.DB, c.req.raw);
   const isAdm = !!user && ehAdmin(user);
-  // só ADMIN pode ver gabarito em REVIEW; em ACTIVE, gabarito protegido (Fase 6)
+  // só ADMIN pode ver gabarito em REVIEW; em ACTIVE/PUBLISHED, gabarito protegido (B4)
   if ([STATUS.DRAFT, STATUS.REVIEW].includes(room.status) && !isAdm) return c.json({ erro: 'Sala ainda em revisão.' }, 403);
   const qs = await todas(c.env.DB, 'SELECT * FROM questions WHERE room_id = ? ORDER BY ordem', id);
   const comOpts = await Promise.all(qs.map(async (q: any) => {
     const opts = await todas(c.env.DB, 'SELECT texto, ordem FROM question_options WHERE question_id = ? ORDER BY ordem', q.id);
-    // Em ACTIVE, não expõe correta_idx para não-ADMIN (proteção gabarito)
-    const hide = room.status === STATUS.ACTIVE && !isAdm;
+    // Em PUBLISHED/ACTIVE, não expõe correta_idx para não-ADMIN (B4)
+    const hide = (room.status === STATUS.PUBLISHED || room.status === STATUS.ACTIVE) && !isAdm;
     return {
       id: q.id, enunciado: q.enunciado, explicacao: hide ? undefined : q.explicacao,
       dificuldade: q.dificuldade, assunto: q.assunto, ordem: q.ordem,

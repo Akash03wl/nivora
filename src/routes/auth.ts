@@ -47,7 +47,7 @@ auth.post('/register', async (c) => {
   const user = await primeira(db, 'SELECT id, nick, email, avatar, papel, criado_em FROM users WHERE id = ?', id);
 
   c.header('Set-Cookie', cookieSessao(token, isSecure(req, c.env)));
-  return c.json({ usuario: perfilPublico(user), token }, 201);
+  return c.json({ usuario: perfilPublico(user) }, 201);
 });
 
 // POST /api/auth/login
@@ -68,7 +68,7 @@ auth.post('/login', async (c) => {
   await executar(db, 'UPDATE users SET ultimo_acesso = ? WHERE id = ?', new Date().toISOString(), user.id);
   const token = await criarSessao(db, user.id);
   c.header('Set-Cookie', cookieSessao(token, isSecure(req, c.env)));
-  return c.json({ usuario: perfilPublico(user), token });
+  return c.json({ usuario: perfilPublico(user) });
 });
 
 // POST /api/auth/logout

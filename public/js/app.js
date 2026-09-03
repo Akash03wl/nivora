@@ -1,4 +1,7 @@
-// NIVORA — frontend Fase 2 (auth)
+// NIVORA — frontend
+function escapeHTML(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 let modo = 'login'; // login | register
 
 const authArea = document.getElementById('auth-area');
@@ -37,7 +40,7 @@ async function refreshAuth() {
     if (r.ok) {
       const d = await r.json();
       const isAdmin = d.usuario.papel === 'ADMIN';
-      authArea.innerHTML = `<span style="color:var(--muted)">Olá, <strong>${d.usuario.nick}</strong> • ${d.usuario.papel}</span> <button id="btn-logout" class="btn" style="padding:6px 12px; background:var(--card-2); border:1px solid var(--border)">Sair</button>`;
+      authArea.innerHTML = `<span style="color:var(--muted)">Olá, <strong>${escapeHTML(d.usuario.nick)}</strong> • ${d.usuario.papel}</span> <button id="btn-logout" class="btn" style="padding:6px 12px; background:var(--card-2); border:1px solid var(--border)">Sair</button>`;
       document.getElementById('btn-logout')?.addEventListener('click', async () => {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
         refreshAuth();
@@ -144,12 +147,12 @@ async function carregarSalas() {
       <div class="card" style="display:flex; flex-direction:column; gap:8px">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span class="badge">${s.status} • ${s.dificuldade}</span>
-          ${s.codigo ? `<small style="color:var(--muted)" aria-label="Código da sala">#${s.codigo}</small>` : ''}
+          ${s.codigo ? `<small style="color:var(--muted)" aria-label="Código da sala">#${escapeHTML(s.codigo)}</small>` : ''}
         </div>
-        <strong style="font-family:var(--font-title)">${s.nome}</strong>
-        <small style="color:var(--muted); line-height:1.4">${s.descricao || 'Sem descrição'}</small>
-        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${assuntos}</small>
-        <button class="btn btn-primary" style="width:100%; margin-top:auto" onclick="alert('Fase 6: Entrar em ${s.nome.replace(/'/g, "\\'")} — faça login e inicie a tentativa')" aria-label="Entrar na sala ${s.nome}">Entrar</button>
+        <strong style="font-family:var(--font-title)">${escapeHTML(s.nome)}</strong>
+        <small style="color:var(--muted); line-height:1.4">${escapeHTML(s.descricao) || 'Sem descrição'}</small>
+        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${escapeHTML(assuntos)}</small>
+        <button class="btn btn-primary" style="width:100%; margin-top:auto" onclick="alert('Fase 6: Entrar em ${s.nome.replace(/'/g, "\\'")} — faça login e inicie a tentativa')" aria-label="Entrar na sala ${escapeHTML(s.nome)}">Entrar</button>
       </div>`;
     }).join('');
   } catch (e) {
@@ -199,11 +202,11 @@ async function carregarAdmin() {
       const assuntos = (()=>{ try{return JSON.parse(s.assuntos||'[]').join(', ')}catch{return ''}})();
       return `<div class="card" style="display:flex; flex-direction:column; gap:8px">
         <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap">
-          <strong>${s.nome}</strong>
+          <strong>${escapeHTML(s.nome)}</strong>
           <span class="badge">${s.status}</span>
         </div>
-        <small style="color:var(--muted)">${s.descricao || ''} • ${s.materia_id||'geral'} • ${assuntos} • ${s.quantidade}Q • ${s.tempo_por_questao}s</small>
-        ${s.codigo?`<small style="color:var(--primary)">Código: ${s.codigo}</small>`:''}
+        <small style="color:var(--muted)">${escapeHTML(s.descricao) || ''} • ${s.materia_id||'geral'} • ${escapeHTML(assuntos)} • ${s.quantidade}Q • ${s.tempo_por_questao}s</small>
+        ${s.codigo?`<small style="color:var(--primary)">Código: ${escapeHTML(s.codigo)}</small>`:''}
         <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px">
           <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.8rem" onclick="gerarIA('${s.id}')">Gerar IA</button>
           <button class="btn btn-ghost" style="padding:6px 10px; font-size:0.8rem" onclick="mudarStatus('${s.id}','REVIEW')">→ Review</button>

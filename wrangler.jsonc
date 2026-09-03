@@ -18,6 +18,9 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	"ai": {
+		"binding": "AI"
+	},
 	"vars": {
 		"ENVIRONMENT": "production",
 		"APP_NAME": "Nivora",

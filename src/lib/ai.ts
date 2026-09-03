@@ -89,17 +89,26 @@ export function validarLote(questoes: any[]): ValidacaoResultado {
   return { ok: true, questoes };
 }
 
-// Mock local garantido (fallback)
+// Mock local garantido (fallback) — B2: correta_idx aleatório, não sempre 2
 export function mockLocal(params: GerarParams) {
   return {
-    questoes: Array.from({ length: params.quantidade }, (_, i) => ({
-      enunciado: `[${params.materia} • ${params.assuntos[i % params.assuntos.length]}] Questão ${i + 1} (${params.dificuldade}) — ${i + 1}. Qual alternativa está correta sobre "${params.assuntos[i % params.assuntos.length]}"?`,
-      alternativas: [`Conceito A de ${params.assuntos[i % params.assuntos.length]}`, `Conceito B de ${params.assuntos[i % params.assuntos.length]}`, `Resposta correta sobre ${params.assuntos[i % params.assuntos.length]}`, `Distrator D de ${params.assuntos[i % params.assuntos.length]}`],
-      correta_idx: 2,
-      explicacao: `A alternativa C está correta porque aborda diretamente "${params.assuntos[i % params.assuntos.length]}" no nível ${params.dificuldade}, conforme explicação pedagógica.`,
-      dificuldade: params.dificuldade,
-      assunto: params.assuntos[i % params.assuntos.length]
-    }))
+    questoes: Array.from({ length: params.quantidade }, (_, i) => {
+      const correta = Math.floor(Math.random() * 4);
+      const assunto = params.assuntos[i % params.assuntos.length];
+      const alts = Array.from({ length: 4 }, (_, idx) => {
+        if (idx === correta) return `Resposta correta sobre ${assunto} (nível ${params.dificuldade})`;
+        return `Distrator ${String.fromCharCode(65+idx)} de ${assunto}`;
+      });
+      const letra = String.fromCharCode(65+correta);
+      return {
+        enunciado: `[${params.materia} • ${assunto}] Questão ${i + 1} (${params.dificuldade}) — Qual alternativa está correta sobre "${assunto}"?`,
+        alternativas: alts,
+        correta_idx: correta,
+        explicacao: `A alternativa ${letra} está correta porque aborda diretamente "${assunto}" no nível ${params.dificuldade}, conforme explicação pedagógica.`,
+        dificuldade: params.dificuldade,
+        assunto
+      };
+    })
   };
 }
 
