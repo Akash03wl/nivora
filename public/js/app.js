@@ -71,31 +71,55 @@ form?.addEventListener('submit', async (e) => {
 
 setModo('login');
 refreshAuth();
-fetch('/api/health').then(r=>r.json()).then(d=>console.log('health', d)).catch(()=>{});
 
-// Fase 4 — listar salas
+// Footer stats + health
+fetch('/api/health').then(r=>r.json()).then(d=>{
+  console.log('health', d);
+  const el = document.getElementById('footer-stats');
+  if (el) el.textContent = `API ${d.db} • ${d.env} • ${new Date(d.time).toLocaleDateString('pt-BR')}`;
+}).catch(()=>{});
+
+// Fase 4/10 — listar salas com estados loading/error/empty (Fase 10)
 async function carregarSalas() {
-  const container = document.querySelector('#salas .grid-3');
-  if (!container) return;
+  const grid = document.getElementById('salas-grid');
+  const statusEl = document.getElementById('salas-status');
+  const errorEl = document.getElementById('salas-error');
+  const emptyEl = document.getElementById('salas-empty');
+  if (!grid) return;
+  // loading
+  if (statusEl) statusEl.textContent = 'Carregando...';
+  if (errorEl) errorEl.style.display = 'none';
+  if (emptyEl) emptyEl.style.display = 'none';
+  grid.innerHTML = `<div class="card skeleton" style="height:120px"></div><div class="card skeleton" style="height:120px"></div><div class="card skeleton" style="height:120px"></div>`;
   try {
     const r = await fetch('/api/rooms', { credentials: 'same-origin' });
+    if (!r.ok) throw new Error('Falha ao carregar salas');
     const d = await r.json();
     const rooms = d.rooms || [];
+    if (statusEl) statusEl.textContent = `${rooms.length} sala(s)`;
     if (!rooms.length) {
-      container.innerHTML = `<div class="card" style="grid-column:1/-1; text-align:center; color:var(--muted)">Nenhuma sala ativa no momento. Volte em breve!</div>`;
+      grid.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = 'block';
       return;
     }
-    container.innerHTML = rooms.map((s) => `
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
-          <span style="background:var(--card-2); border:1px solid var(--border); padding:4px 8px; border-radius:999px; font-size:0.72rem">${s.status} • ${s.dificuldade}</span>
-          ${s.codigo ? `<small style="color:var(--muted)">#${s.codigo}</small>` : ''}
+    grid.innerHTML = rooms.map((s) => {
+      const assuntos = (()=>{ try{return JSON.parse(s.assuntos||'[]').join(', ')}catch{return s.assuntos||''}})();
+      return `
+      <div class="card" style="display:flex; flex-direction:column; gap:8px">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="badge">${s.status} • ${s.dificuldade}</span>
+          ${s.codigo ? `<small style="color:var(--muted)" aria-label="Código da sala">#${s.codigo}</small>` : ''}
         </div>
-        <strong>${s.nome}</strong><br>
-        <small style="color:var(--muted)">${s.descricao || ''}</small><br>
-        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${JSON.parse(s.assuntos || '[]').join(', ')}</small>
-        <div style="margin-top:10px"><button class="btn btn-primary" style="width:100%" onclick="alert('Execução Fase 6: ${s.nome}')">Entrar</button></div>
-      </div>`).join('');
-  } catch { /* offline */ }
+        <strong style="font-family:var(--font-title)">${s.nome}</strong>
+        <small style="color:var(--muted); line-height:1.4">${s.descricao || 'Sem descrição'}</small>
+        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${assuntos}</small>
+        <button class="btn btn-primary" style="width:100%; margin-top:auto" onclick="alert('Fase 6: Entrar em ${s.nome.replace(/'/g, "\\'")} — faça login e inicie a tentativa')" aria-label="Entrar na sala ${s.nome}">Entrar</button>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    grid.innerHTML = '';
+    if (statusEl) statusEl.textContent = 'Erro';
+    if (errorEl) { errorEl.textContent = 'Erro ao carregar salas. Verifique sua conexão e tente novamente.'; errorEl.style.display = 'block'; }
+  }
 }
 carregarSalas();

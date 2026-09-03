@@ -12,67 +12,83 @@
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <header class="navbar">
+  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+  <header class="navbar" role="banner">
     <div class="nav-inner">
-      <a href="#" class="logo">
+      <a href="#" class="logo" aria-label="Nivora — início">
         <span class="logo-mark" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 100 100"><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
+          <svg width="22" height="22" viewBox="0 0 100 100" role="img" aria-label="Nivora"><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
         </span>
         NIVORA
       </a>
-      <nav style="display:flex; gap:12px; align-items:center">
+      <nav style="display:flex; gap:12px; align-items:center" aria-label="Navegação principal">
         <a href="#salas">Salas</a>
         <a href="#ranking">Ranking</a>
-        <span id="auth-area" style="display:flex; gap:8px; align-items:center"></span>
+        <span id="auth-area" style="display:flex; gap:8px; align-items:center" aria-live="polite"></span>
       </nav>
     </div>
   </header>
 
-  <main class="container">
-    <section class="hero">
+  <main class="container" id="conteudo">
+    <section class="hero" aria-labelledby="hero-title">
       <div>
         <span class="badge">NIVORA — Plataforma de simulados</span>
-        <h1>Aprenda.<br>Supere. <span class="text-gradient">Evolua.</span></h1>
+        <h1 id="hero-title">Aprenda.<br>Supere. <span class="text-gradient">Evolua.</span></h1>
         <p style="color:var(--muted); margin:12px 0 20px; line-height:1.6">Plataforma de estudos baseada em simulados, desempenho e evolução do conhecimento. Conhecimento → Prática → Desempenho → Evolução.</p>
-        <div style="display:flex; gap:12px">
-          <button class="btn btn-primary" id="btn-comecar">Começar agora</button>
-          <a class="btn" style="background:var(--card-2); border:1px solid var(--border)" href="#salas">Explorar salas</a>
+        <div style="display:flex; gap:12px; flex-wrap:wrap">
+          <button class="btn btn-primary" id="btn-comecar" aria-label="Começar agora, abrir login">Começar agora</button>
+          <a class="btn btn-ghost" href="#salas">Explorar salas</a>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:16px; flex-wrap:wrap; color:var(--muted); font-size:0.85rem" aria-label="Estatísticas">
+          <span><strong style="color:var(--text)">Fase 8</strong> Histórico</span>
+          <span><strong style="color:var(--text)">IA</strong> Geração</span>
+          <span><strong style="color:var(--text)">Ranking</strong> por sala</span>
         </div>
       </div>
-      <div class="card" style="display:flex; align-items:center; justify-content:center; min-height:160px">
-        <div style="text-align:center; color:var(--muted)">Fase 1 — Fundação<br><small>Frontend + Backend + D1 pronto</small></div>
+      <div class="card" style="display:flex; align-items:center; justify-content:center; min-height:160px; flex-direction:column; gap:8px">
+        <div class="badge">Conhecimento → Evolução</div>
+        <div style="text-align:center; color:var(--muted); font-size:0.9rem">Simulados com correção no servidor<br><small>Tempo validado, gabarito protegido</small></div>
       </div>
     </section>
 
-    <section id="salas" style="margin-top:32px">
-      <h2>Salas abertas</h2>
-      <p style="color:var(--muted)">Em breve — Fase 4: criação e publicação de simulados.</p>
-      <div class="grid-3" style="margin-top:16px">
-        <div class="card">Matemática — Função afim<br><small style="color:var(--muted)">10 questões • Médio • 30s</small></div>
-        <div class="card">Português — Interpretação<br><small style="color:var(--muted)">20 questões • Difícil • 45s</small></div>
-        <div class="card">Ciências — Geral<br><small style="color:var(--muted)">15 questões • Fácil • 20s</small></div>
+    <section id="salas" style="margin-top:32px" aria-labelledby="salas-title">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px">
+        <div>
+          <h2 id="salas-title">Salas abertas</h2>
+          <p style="color:var(--muted)">Simulados publicados e ativos para você praticar agora.</p>
+        </div>
+        <span id="salas-status" class="badge" aria-live="polite">Carregando...</span>
+      </div>
+      <div id="salas-grid" class="grid-3" style="margin-top:16px" aria-live="polite">
+        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+      </div>
+      <div id="salas-error" class="state state-error" style="display:none; margin-top:12px"></div>
+      <div id="salas-empty" class="state state-empty" style="display:none; margin-top:12px">
+        <p><strong>Nenhuma sala ativa no momento.</strong><br>Volte em breve ou peça para um administrador publicar um simulado.</p>
       </div>
     </section>
   </main>
 
-  <footer style="margin-top:40px; padding:20px; text-align:center; color:var(--muted); border-top:1px solid var(--border); width:100%">
-    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 2 Autenticação
+  <footer style="margin-top:40px; padding:24px; text-align:center; color:var(--muted); border-top:1px solid var(--border); width:100%">
+    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 10 UI/UX — <a href="/api/health" style="color:var(--primary)">API Health</a> · <span id="footer-stats" style="color:var(--muted)">Carregando...</span>
   </footer>
 
-  <!-- Auth modal (Fase 2) -->
-  <dialog id="auth-dialog" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
+  <!-- Auth modal (Fase 2) — acessível -->
+  <dialog id="auth-dialog" aria-labelledby="auth-title" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
     <div style="padding:24px">
       <h3 id="auth-title" style="font-family:var(--font-title); margin-bottom:12px">Entrar na Nivora</h3>
-      <div style="display:flex; gap:8px; margin-bottom:16px">
-        <button class="btn btn-primary" id="tab-login" style="flex:1">Entrar</button>
-        <button class="btn" id="tab-register" style="flex:1; background:var(--card-2); border:1px solid var(--border)">Criar conta</button>
+      <div style="display:flex; gap:8px; margin-bottom:16px" role="tablist">
+        <button class="btn btn-primary" id="tab-login" style="flex:1" role="tab" aria-selected="true">Entrar</button>
+        <button class="btn btn-ghost" id="tab-register" style="flex:1" role="tab" aria-selected="false">Criar conta</button>
       </div>
-      <form id="auth-form" style="display:flex; flex-direction:column; gap:10px">
-        <input id="auth-nick" placeholder="Nick (só cadastro)" style="padding:10px; border:1px solid var(--border); border-radius:8px; display:none" />
-        <input id="auth-email" type="email" placeholder="E-mail" required style="padding:10px; border:1px solid var(--border); border-radius:8px" />
-        <input id="auth-senha" type="password" placeholder="Senha (mín 8)" required style="padding:10px; border:1px solid var(--border); border-radius:8px" />
+      <form id="auth-form" style="display:flex; flex-direction:column; gap:10px" novalidate>
+        <input id="auth-nick" class="input" placeholder="Nick (só cadastro)" aria-label="Nick" style="display:none" />
+        <input id="auth-email" class="input" type="email" placeholder="E-mail" required aria-label="E-mail" />
+        <input id="auth-senha" class="input" type="password" placeholder="Senha (mín 8)" required aria-label="Senha" minlength="8" />
         <button class="btn btn-primary" type="submit" id="auth-submit">Entrar</button>
-        <div id="auth-msg" style="font-size:0.85rem; color:var(--error); min-height:1.2em"></div>
+        <div id="auth-msg" style="font-size:0.85rem; color:var(--error); min-height:1.2em" aria-live="polite"></div>
       </form>
       <button onclick="document.getElementById('auth-dialog').close()" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
     </div>
