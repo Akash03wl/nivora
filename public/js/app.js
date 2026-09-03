@@ -166,20 +166,20 @@ document.getElementById('admin-create-form')?.addEventListener('submit', async (
   const msg = document.getElementById('admin-create-msg');
   if (msg) msg.textContent = 'Criando...';
   const payload = {
-    nome: (document.getElementById('admin-nome') as HTMLInputElement).value.trim(),
-    descricao: (document.getElementById('admin-desc') as HTMLInputElement).value.trim(),
-    materia_id: (document.getElementById('admin-materia') as HTMLSelectElement).value || null,
-    assuntos: (document.getElementById('admin-assuntos') as HTMLInputElement).value.split(',').map(s=>s.trim()).filter(Boolean),
-    quantidade: Number((document.getElementById('admin-qtd') as HTMLSelectElement).value),
-    dificuldade: (document.getElementById('admin-dif') as HTMLSelectElement).value,
-    tempo_por_questao: Number((document.getElementById('admin-tempo') as HTMLSelectElement).value)
+    nome: (document.getElementById('admin-nome')).value.trim(),
+    descricao: (document.getElementById('admin-desc')).value.trim(),
+    materia_id: (document.getElementById('admin-materia')).value || null,
+    assuntos: (document.getElementById('admin-assuntos')).value.split(',').map(s=>s.trim()).filter(Boolean),
+    quantidade: Number((document.getElementById('admin-qtd')).value),
+    dificuldade: (document.getElementById('admin-dif')).value,
+    tempo_por_questao: Number((document.getElementById('admin-tempo')).value)
   };
   try {
     const r = await fetch('/api/rooms', { method:'POST', headers:{'Content-Type':'application/json'}, credentials:'same-origin', body: JSON.stringify(payload) });
     const d = await r.json();
     if (!r.ok) { if(msg) msg.textContent = d.erro || 'Erro'; return; }
     if(msg) msg.textContent = `Criado: ${d.room.nome} (${d.room.status})`;
-    (e.target as HTMLFormElement).reset();
+    (e.target).reset();
     carregarSalas(); carregarAdmin();
   } catch { if(msg) msg.textContent = 'Falha de rede'; }
 });
@@ -195,7 +195,7 @@ async function carregarAdmin() {
     const rooms = d.rooms || [];
     if (!rooms.length) { grid.innerHTML=''; if(emptyEl) emptyEl.style.display='block'; return; }
     if(emptyEl) emptyEl.style.display='none';
-    grid.innerHTML = rooms.map((s:any)=>{
+    grid.innerHTML = rooms.map((s)=>{
       const assuntos = (()=>{ try{return JSON.parse(s.assuntos||'[]').join(', ')}catch{return ''}})();
       return `<div class="card" style="display:flex; flex-direction:column; gap:8px">
         <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap">
@@ -218,8 +218,7 @@ async function carregarAdmin() {
   } catch { grid.innerHTML = `<div class="state state-error">Erro ao carregar salas admin.</div>`; }
 }
 document.getElementById('admin-refresh')?.addEventListener('click', carregarAdmin);
-// @ts-ignore
-(window as any).gerarIA = async (id:string)=>{
+window.gerarIA = async (id)=>{
   const el = document.getElementById(`admin-msg-${id}`);
   if(el) el.textContent='Gerando com IA...';
   try{
@@ -230,8 +229,7 @@ document.getElementById('admin-refresh')?.addEventListener('click', carregarAdmi
     carregarAdmin();
   }catch{ if(el) el.textContent='Falha'; }
 };
-// @ts-ignore
-(window as any).mudarStatus = async (id:string, st:string)=>{
+window.mudarStatus = async (id, st)=>{
   const el = document.getElementById(`admin-msg-${id}`);
   if(el) el.textContent=`Alterando para ${st}...`;
   try{
@@ -242,8 +240,7 @@ document.getElementById('admin-refresh')?.addEventListener('click', carregarAdmi
     carregarSalas(); carregarAdmin();
   }catch{ if(el) el.textContent='Falha'; }
 };
-// @ts-ignore
-(window as any).deletarSala = async (id:string)=>{
+window.deletarSala = async (id)=>{
   if(!confirm('Excluir esta sala?')) return;
   const r = await fetch(`/api/rooms/${id}`,{ method:'DELETE', credentials:'same-origin' });
   const d = await r.json();
