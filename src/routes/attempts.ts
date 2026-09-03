@@ -155,8 +155,6 @@ attempts.post('/:id/finish', async (c) => {
   };
   // calcula posição no ranking da sala (ordenação: acertos desc, pontuacao desc, tempo asc)
   const ranking = await todas(c.env.DB, 'SELECT acertos, pontuacao, tempo_total FROM attempts WHERE room_id = ? AND status = ? ORDER BY acertos DESC, pontuacao DESC, tempo_total ASC', id, 'finalizada');
-  const idx = (ranking as any[]).findIndex(r => r.acertos===acertos && r.pontuacao===pontuacao && r.tempo_total===tempoFinal);
-  // fallback: conta quantos estão acima (para lidar com empates)
   let acima = 0;
   for (const r of ranking as any[]) {
     if (r.acertos > acertos) acima++;
@@ -170,5 +168,67 @@ attempts.post('/:id/finish', async (c) => {
     resultado,
     gabarito: (qsGabarito as any[]).map(q=>({ id:q.id, correta_idx: q.correta_idx, explicacao: q.explicacao, alternativas: optsMap.get(q.id) })),
     respostas: respostas.map((r:any)=>({ question_id: r.question_id, alternativa_idx: r.alternativa_idx, correta: !!r.correta, tempo_gasto: r.tempo_gasto }))
+  });
+});
+
+// GET /api/rooms/:id/ranking — ranking por sala (ordenação: acertos, pontuacao, tempo)
+attempts.get('/:id/ranking', async (c) => {
+  const id = c.req.param('id');
+  const room: any = await primeira(c.env.DB, 'SELECT id, status FROM rooms WHERE id = ?', id);
+  if (!room) return c.json({ erro: 'Sala não encontrada.' }, 404);
+  // ranking só faz sentido para salas publicadas/ativas/fechadas; DRAFT/REVIEW retorna vazio
+  const lista = await todas(c.env.DB,
+    `SELECT a.id, a.user_id, u.nick, u.avatar, a.acertos, a.erros, a.pontuacao, a.tempo_total, a.finalizado_em
+     FROM attempts a JOIN users u ON u.id = a.user_id
+     WHERE a.room_id = ? AND a.status = 'finalizada'
+     ORDER BY a.acertos DESC, a.pontuacao DESC, a.tempo_total ASC LIMIT 100`, id);
+  const ranking = (lista as any[]).map((r, idx) => ({
+    posicao: idx + 1,
+    user_id: r.user_id, nick: r.nick, avatar: r.avatar,
+    acertos: r.acertos, erros: r.erros, pontuacao: r.pontuacao, tempo_total: r.tempo_total,
+    finalizado_em: r.finalizado_em
+  }));
+  return c.json({ room_id: id, total: ranking.length, ranking });
+});
+
+// GET /api/rooms/:id/result — resultado persistido do usuário (sem recalcular)
+attempts.get('/:id/result', async (c) => {
+  const user = await usuarioDaSessao(c.env.DB, c.req.raw);
+  if (!user) return c.json({ erro: 'Não autenticado.' }, 401);
+  const id = c.req.param('id');
+  const att: any = await primeira(c.env.DB, 'SELECT * FROM attempts WHERE user_id = ? AND room_id = ?', (user as any).id, id);
+  if (!att) return c.json({ erro: 'Nenhuma tentativa encontrada.' }, 404);
+  if (att.status !== 'finalizada') return c.json({ erro: 'Finalize o simulado para ver o resultado.' }, 409);
+  const totalQuestoes = (await primeira<{ c:number }>(c.env.DB, 'SELECT COUNT(*) as c FROM questions WHERE room_id = ?', id))?.c || 0;
+  const respostas = await todas(c.env.DB, 'SELECT question_id, alternativa_idx, correta, tempo_gasto FROM answers WHERE attempt_id = ?', att.id);
+  const qs = await todas(c.env.DB, 'SELECT id, enunciado, correta_idx, explicacao, assunto FROM questions WHERE room_id = ? ORDER BY ordem', id);
+  const porQuestao = (qs as any[]).map(q => {
+    const r: any = (respostas as any[]).find(x => x.question_id === q.id);
+    return {
+      question_id: q.id, enunciado: q.enunciado, assunto: q.assunto,
+      sua_resposta: r ? r.alternativa_idx : null,
+      correta_idx: q.correta_idx,
+      acertou: r ? !!r.correta : false,
+      explicacao: q.explicacao,
+      tempo_gasto: r ? r.tempo_gasto : null
+    };
+  });
+  // posição
+  const ranking = await todas(c.env.DB, 'SELECT acertos, pontuacao, tempo_total FROM attempts WHERE room_id = ? AND status = ? ORDER BY acertos DESC, pontuacao DESC, tempo_total ASC', id, 'finalizada');
+  let acima = 0;
+  for (const r of ranking as any[]) {
+    if (r.acertos > att.acertos) acima++;
+    else if (r.acertos === att.acertos && r.pontuacao > att.pontuacao) acima++;
+    else if (r.acertos === att.acertos && r.pontuacao === att.pontuacao && r.tempo_total < att.tempo_total) acima++;
+  }
+  return c.json({
+    attempt: att,
+    resultado: {
+      acertos: att.acertos, erros: att.erros, total: totalQuestoes,
+      pontuacao: att.pontuacao, tempoTotal: att.tempo_total,
+      aproveitamento: totalQuestoes ? Math.round(att.acertos/totalQuestoes*100) : 0,
+      posicao: acima + 1
+    },
+    porQuestao
   });
 });
