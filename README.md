@@ -11,6 +11,15 @@
 
 **Live:** **https://nivora.walacefercundes132.workers.dev** · **API:** `/api/health`
 
+![Nivora Screenshot](https://via.placeholder.com/1280x720/0B1220/2D7FF9?text=NIVORA+%E2%80%94+Aprenda.+Supere.+Evolua.)
+> *Homepage Nivora — hero “Aprenda. Supere. Evolua.”, salas e ranking. Substitua por `public/og-image.png` (1280×720) quando tiver print real.*
+
+**Domínio custom:** Para ter `https://nivora.app`, compre o domínio no Cloudflare Registrar e rode:
+```bash
+npx wrangler route add "nivora.app/*" --zone-name="nivora.app"
+# ou Dashboard → Workers → nivora → Custom Domains → Add → nivora.app
+```
+
 ---
 
 ## ✨ Visão
