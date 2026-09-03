@@ -7,6 +7,7 @@ import { Hono } from 'hono';
 import { auth } from './routes/auth.js';
 import { rooms } from './routes/rooms.js';
 import { attempts } from './routes/attempts.js';
+import { history } from './routes/history.js';
 
 type Env = {
   DB: D1Database;
@@ -52,10 +53,11 @@ app.get('/api/health', async (c) => {
   });
 });
 
-// Fase 2 — Auth | Fase 4 — Rooms | Fase 6 — Execução
+// Fase 2 — Auth | Fase 4 — Rooms | Fase 6 — Execução | Fase 8 — Histórico
 app.route('/api/auth', auth);
 app.route('/api/rooms', rooms);
 app.route('/api/rooms', attempts);
+app.route('/api/me', history);
 
 app.all('/api/*', (c) => c.json({ erro: 'Rota não encontrada' }, 404));
 
