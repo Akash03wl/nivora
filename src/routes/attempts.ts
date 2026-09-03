@@ -3,6 +3,7 @@ import { usuarioDaSessao } from '../lib/auth.js';
 import { primeira, todas, executar, novoId } from '../lib/db.js';
 import { STATUS } from '../lib/config.js';
 import { pontosDaQuestao } from '../lib/scoring.js';
+import { checar } from '../lib/rateLimit.js';
 
 type Env = { DB: D1Database };
 
@@ -59,6 +60,8 @@ attempts.get('/:id/attempt', async (c) => {
 
 // POST /api/rooms/:id/answer — registra resposta (protege gabarito, valida tempo no backend)
 attempts.post('/:id/answer', async (c) => {
+  const lim = await checar(c.env.DB, c.req.raw, 'answer', 30, 60);
+  if (!lim.ok) return c.json({ erro: 'Muitas respostas. Aguarde.' }, 429);
   const user = await usuarioDaSessao(c.env.DB, c.req.raw);
   if (!user) return c.json({ erro: 'Não autenticado.' }, 401);
   const id = c.req.param('id');
@@ -100,6 +103,8 @@ attempts.post('/:id/answer', async (c) => {
 
 // POST /api/rooms/:id/finish — finaliza e corrige no backend (nunca confia no cliente)
 attempts.post('/:id/finish', async (c) => {
+  const lim = await checar(c.env.DB, c.req.raw, 'finish', 10, 60);
+  if (!lim.ok) return c.json({ erro: 'Muitas finalizações. Aguarde.' }, 429);
   const user = await usuarioDaSessao(c.env.DB, c.req.raw);
   if (!user) return c.json({ erro: 'Não autenticado.' }, 401);
   const id = c.req.param('id');

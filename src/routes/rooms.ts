@@ -34,8 +34,10 @@ async function exigirAdmin(c: any) {
   return { user };
 }
 
-// POST /api/rooms — criar (ADMIN)
+// POST /api/rooms — criar (ADMIN) + rate limit
 rooms.post('/', async (c) => {
+  const lim = await checar(c.env.DB, c.req.raw, 'rooms-create', 10, 60);
+  if (!lim.ok) return c.json({ erro: 'Muitas salas criadas. Aguarde.' }, 429);
   const chk = await exigirAdmin(c);
   if ('erro' in chk) return chk.erro;
   const user: any = chk.user;
