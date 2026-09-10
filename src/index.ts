@@ -4,6 +4,7 @@
  */
 
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import { auth } from './routes/auth.js';
 import { rooms } from './routes/rooms.js';
 import { attempts } from './routes/attempts.js';
@@ -20,7 +21,6 @@ type Env = {
   AI_MODEL?: string;
   AI_API_KEY?: string;
   AI_BASE_URL?: string;
-  ADMIN_EMAIL?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -30,6 +30,24 @@ app.use('*', async (c, next) => {
   await next();
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) c.header(k, v);
 });
+
+// Validate JSON before route handlers, including null and array payloads.
+app.use('/api/*', bodyLimit({ maxSize: 16 * 1024, onError: (c) => c.json({ erro: 'Pedido muito grande.' }, 413) }));
+app.use('/api/*', async (c, next) => {
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(c.req.method)) {
+    const origin = c.req.header('Origin');
+    if (origin && origin !== new URL(c.req.url).origin) return c.json({ erro: 'Origem não permitida.' }, 403);
+    const text = await c.req.text();
+    if (text) {
+      try {
+        const body = JSON.parse(text);
+        if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ erro: 'Envie um objeto JSON.' }, 400);
+      } catch { return c.json({ erro: 'JSON inválido.' }, 400); }
+    }
+  }
+  await next();
+});
+app.onError((_error, c) => c.json({ erro: 'Não foi possível concluir a solicitação.' }, 500));
 
 app.get('/api/health', async (c) => {
   const env = c.env;

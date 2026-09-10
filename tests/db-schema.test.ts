@@ -59,12 +59,19 @@ describe('DB Schema Fase 3', () => {
   });
 
   it('migrations são reaplicáveis (IF NOT EXISTS)', () => {
-    // reaplicar não deve quebrar
+    // Reaplicar criações (CREATE TABLE/INDEX IF NOT EXISTS) e seeds (INSERT OR IGNORE) não deve quebrar.
+    // Exceção documentada: 0006_faseB é um ALTER TABLE ADD COLUMN — SQLite não aceita IF NOT EXISTS
+    // nesse comando, então ele é aplicado uma única vez (D1 controla migrations aplicadas).
     const dir = path.join(process.cwd(), 'migrations');
-    for (const f of fs.readdirSync(dir).filter(x=>x.endsWith('.sql')).sort()) {
+    for (const f of fs.readdirSync(dir).filter(x=>x.endsWith('.sql') && !x.includes('0006')).sort()) {
       db.exec(fs.readFileSync(path.join(dir,f),'utf-8'));
     }
     const c = db.prepare("SELECT COUNT(*) as c FROM subjects").get() as any;
     expect(c.c).toBeGreaterThanOrEqual(6);
+    // 0006 aplicado no beforeEach: coluna existe exatamente uma vez e com o tipo certo
+    const cols = db.prepare('PRAGMA table_info(attempts)').all() as any[];
+    const col = cols.filter((r:any)=>r.name==='ultima_resposta_em');
+    expect(col).toHaveLength(1);
+    expect(col[0].type).toBe('TEXT');
   });
 });

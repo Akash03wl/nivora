@@ -56,3 +56,19 @@ export function ordenarRanking<T extends { acertos: number; pontuacao: number; t
     return ta - tb;
   });
 }
+
+// B17: função única para posição no ranking (usada em 4 lugares)
+export function calcularPosicao(
+  lista: Array<{ acertos: number; pontuacao: number; tempo_total?: number; tempoTotal?: number }>,
+  alvo: { acertos: number; pontuacao: number; tempo_total?: number; tempoTotal?: number }
+): number {
+  const ta = (alvo as any).tempo_total ?? (alvo as any).tempoTotal ?? 0;
+  let acima = 0;
+  for (const r of lista) {
+    const tr = (r as any).tempo_total ?? (r as any).tempoTotal ?? 0;
+    if (r.acertos > alvo.acertos) acima++;
+    else if (r.acertos === alvo.acertos && r.pontuacao > alvo.pontuacao) acima++;
+    else if (r.acertos === alvo.acertos && r.pontuacao === alvo.pontuacao && tr < ta) acima++;
+  }
+  return acima + 1;
+}

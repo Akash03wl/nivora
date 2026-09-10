@@ -17,7 +17,6 @@ export async function executar(db: D1Database, sql: string, ...params: unknown[]
 }
 
 export function novoId(prefix = ''): string {
-  const r = Math.floor(Math.random() * 1e9).toString(36);
-  const s = Date.now().toString(36);
-  return `${prefix}${r}${s}`;
+  // B15: crypto.randomUUID() em vez de Math.random()
+  return `${prefix}${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}${Date.now().toString(36).slice(-4)}`;
 }

@@ -2,125 +2,369 @@
 <html lang="pt-BR" data-theme="system">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Nivora — Aprenda. Supere. Evolua.</title>
   <meta name="description" content="Nivora — Plataforma de estudos e simulados com foco em conhecimento, desempenho e evolução." />
-  <meta name="theme-color" content="#0B1220" />
+  <meta name="theme-color" content="#181A17" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,600;8..60,700;8..60,800&family=Inter:wght@400;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
-  <header class="navbar" role="banner">
-    <div class="nav-inner">
-      <a href="#" class="logo" aria-label="Nivora — início">
-        <span class="logo-mark" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 100 100" role="img" aria-label="Nivora"><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
-        </span>
-        NIVORA
-      </a>
-      <nav style="display:flex; gap:12px; align-items:center" aria-label="Navegação principal">
-        <a href="#salas">Salas</a>
-        <a href="#ranking">Ranking</a>
-        <a href="#admin" id="nav-admin" style="display:none; color:var(--primary); font-weight:700">Admin</a>
-        <span id="auth-area" style="display:flex; gap:8px; align-items:center" aria-live="polite"></span>
-      </nav>
+  <!-- Tela de carregamento: aparece em toda visita/recarregamento, por ~3s, antes de qualquer outra coisa -->
+  <div id="splash" role="status" aria-label="Carregando Nivora">
+    <div class="splash-inner">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" role="img" aria-label="Nivora"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
+      </span>
+      <strong class="splash-nome">NIVORA</strong>
+      <p class="splash-frase" aria-hidden="true"><span>Aprenda.</span><span>Supere.</span><span>Evolua.</span></p>
+      <div class="splash-trilha" aria-hidden="true"><i></i></div>
     </div>
-  </header>
+  </div>
 
-  <main class="container" id="conteudo">
-    <section class="hero" aria-labelledby="hero-title">
-      <div>
-        <span class="badge">NIVORA — Plataforma de simulados</span>
-        <h1 id="hero-title">Aprenda.<br>Supere. <span class="text-gradient">Evolua.</span></h1>
-        <p style="color:var(--muted); margin:12px 0 20px; line-height:1.6">Plataforma de estudos baseada em simulados, desempenho e evolução do conhecimento. Conhecimento → Prática → Desempenho → Evolução.</p>
-        <div style="display:flex; gap:12px; flex-wrap:wrap">
-          <button class="btn btn-primary" id="btn-comecar" aria-label="Começar agora, abrir login">Começar agora</button>
-          <a class="btn btn-ghost" href="#salas">Explorar salas</a>
+  <!-- Tela de login obrigatório: único conteúdo para quem não tem sessão válida.
+       A regra é: o conteúdo rico (como funciona / por quê / FAQ) fica DENTRO desta tela,
+       ao lado ou abaixo do formulário — nunca "antes" do login. -->
+  <section id="login-screen" aria-label="Acesso à Nivora">
+    <div class="login-wrap">
+      <!-- Coluna do formulário (fixa no desktop, primeiro no mobile) -->
+      <div class="login-col login-col-forma">
+        <div class="login-card">
+          <div class="login-marca">
+            <span class="logo-mark" aria-hidden="true">
+              <svg viewBox="0 0 100 100" role="img" aria-label="Nivora"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
+            </span>
+            <strong class="login-nome">NIVORA</strong>
+          </div>
+          <h1 id="auth-title">Entre para começar a estudar</h1>
+          <p class="login-sub">Simulados com correção explicada, progresso por assunto e sua turma junto, uma questão de cada vez.</p>
+          <div class="auth-tabs" role="tablist">
+            <button class="tab-btn ativo" id="tab-login" role="tab" aria-selected="true">Entrar</button>
+            <button class="tab-btn" id="tab-register" role="tab" aria-selected="false">Criar conta</button>
+          </div>
+          <form id="auth-form" novalidate>
+            <input id="auth-nick" class="input" placeholder="Nick" aria-label="Nick" autocomplete="nickname" style="display:none" />
+            <input id="auth-email" class="input" type="email" placeholder="Seu e-mail" required aria-label="E-mail" autocomplete="email" />
+            <input id="auth-senha" class="input" type="password" placeholder="Senha (mín. 8)" required aria-label="Senha" minlength="8" autocomplete="current-password" />
+            <button class="btn btn-primary" type="submit" id="auth-submit">Entrar</button>
+            <div id="auth-msg" class="auth-msg" role="status" aria-live="polite"></div>
+          </form>
+          <button class="text-link" id="link-esqueci" type="button">Esqueci minha senha</button>
         </div>
-        <div style="margin-top:16px; display:flex; gap:16px; flex-wrap:wrap; color:var(--muted); font-size:0.85rem" aria-label="Estatísticas">
-          <span><strong style="color:var(--text)">Fase 8</strong> Histórico</span>
-          <span><strong style="color:var(--text)">IA</strong> Geração</span>
-          <span><strong style="color:var(--text)">Ranking</strong> por sala</span>
+      </div>
+
+      <!-- Coluna do conteúdo rico: explica o produto para quem ainda não tem conta -->
+      <div class="login-col login-col-conteudo">
+        <p class="login-hero-frase">Estude pra prova competindo de verdade — não contra o relógio, contra o quanto você ainda não sabe. Entre numa sala, responda no seu ritmo e veja exatamente o que revisar antes da prova valer.</p>
+        <p id="login-stats" class="login-stats" aria-live="polite"></p>
+
+        <section class="login-secao" aria-labelledby="como-funciona-title">
+          <h2 id="como-funciona-title">Como funciona</h2>
+          <ol id="passos-lista" class="passos"></ol>
+        </section>
+
+        <section class="login-secao" aria-labelledby="por-que-title">
+          <h2 id="por-que-title">Por que estudar assim</h2>
+          <div id="valores-grid" class="valores-grid"></div>
+        </section>
+
+        <section class="login-secao" aria-labelledby="na-pratica-title">
+          <h2 id="na-pratica-title">O Nivora na prática</h2>
+          <div class="mockups">
+            <!-- Prévia de interface (ilustrativa, não um dado real) -->
+            <figure class="mockup" aria-hidden="true">
+              <figcaption>Prévia · Seu progresso por assunto</figcaption>
+              <div class="mp-linha"><span>Matemática</span><span class="num">78%</span></div>
+              <div class="barra"><div class="barra-preenchida" style="width:78%"></div></div>
+              <div class="mp-linha"><span>Português</span><span class="num">54%</span></div>
+              <div class="barra"><div class="barra-preenchida" style="width:54%"></div></div>
+              <div class="mp-linha"><span>História</span><span class="num">41%</span></div>
+              <div class="barra"><div class="barra-preenchida" style="width:41%"></div></div>
+              <p class="mp-frase">"Revise História antes da próxima prova."</p>
+            </figure>
+
+            <figure class="mockup" aria-hidden="true">
+              <figcaption>Prévia · Responda no seu ritmo</figcaption>
+              <div class="mq-topo">
+                <span class="mono">Questão 3 de 20</span>
+                <span class="mono mq-timer">⏱ 0:24</span>
+              </div>
+              <div class="barra-progresso" style="margin:10px 0 16px"><div style="width:15%"></div></div>
+              <p class="mq-enunciado">Qual fator mais contribui para a seca no sertão nordestino?</p>
+              <div class="mq-opcoes">
+                <div class="opcao sel"><span class="opcao-letra">A</span><span>Baixa pluviosidade concentrada em poucos meses</span></div>
+                <div class="opcao"><span class="opcao-letra">B</span><span>Poluição dos rios da região</span></div>
+                <div class="opcao"><span class="opcao-letra">C</span><span>Desmatamento da floresta tropical</span></div>
+                <div class="opcao"><span class="opcao-letra">D</span><span>Aquecimento global recente</span></div>
+              </div>
+            </figure>
+
+            <figure class="mockup" aria-hidden="true">
+              <figcaption>Prévia · Desempenho da turma</figcaption>
+              <div class="placar">
+                <div class="placar-cab" aria-hidden="true">
+                  <span class="placar-pos">#</span>
+                  <span class="placar-nome">Aluno</span>
+                  <span class="placar-col-acertos">Acertos</span>
+                  <span class="placar-col-pontos">Pontos</span>
+                  <span class="placar-col-tempo">Tempo</span>
+                </div>
+                <div class="placar-linha top3"><span class="placar-pos">1º</span><span class="placar-nome">Ana</span><span class="placar-col-acertos placar-num">18/20</span><span class="placar-col-pontos placar-num">1840</span><span class="placar-col-tempo placar-num">04:12</span></div>
+                <div class="placar-linha top3"><span class="placar-pos">2º</span><span class="placar-nome">Bruno</span><span class="placar-col-acertos placar-num">17/20</span><span class="placar-col-pontos placar-num">1790</span><span class="placar-col-tempo placar-num">05:03</span></div>
+                <div class="placar-linha top3"><span class="placar-pos">3º</span><span class="placar-nome">Carlos</span><span class="placar-col-acertos placar-num">16/20</span><span class="placar-col-pontos placar-num">1700</span><span class="placar-col-tempo placar-num">03:58</span></div>
+                <div class="placar-linha eu"><span class="placar-pos">4º</span><span class="placar-nome">Você</span><span class="placar-col-acertos placar-num">15/20</span><span class="placar-col-pontos placar-num">1610</span><span class="placar-col-tempo placar-num">06:20</span></div>
+              </div>
+            </figure>
+          </div>
+        </section>
+
+        <section class="login-secao" aria-labelledby="faq-title">
+          <h2 id="faq-title">Perguntas frequentes</h2>
+          <div id="faq-lista" class="faq-lista"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- Site completo — só fica visível com sessão válida -->
+  <div id="site">
+    <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
+    <header class="navbar" role="banner">
+      <div class="nav-inner">
+        <a href="#" class="logo" aria-label="Nivora — início">
+          <span class="logo-mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 100 100" role="img" aria-label="Nivora"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 72 L22 28 L48 62 L48 28" stroke-width="10"/><path d="M52 58 L72 32" stroke-width="8"/><path d="M72 32 L72 52" stroke-width="8"/></g></svg>
+          </span>
+          NIVORA
+        </a>
+        <nav id="nav-links" class="nav-links" aria-label="Navegação principal">
+          <a href="#salas" id="nav-salas">Salas</a>
+          <a href="#ranking" id="nav-ranking">Ranking</a>
+          <a href="#historico" id="nav-historico" style="display:none">Meu progresso</a>
+          <a href="#admin" id="nav-admin" style="display:none">Admin</a>
+          <span class="nav-divisor" aria-hidden="true"></span>
+          <div class="nav-controles">
+            <button id="btn-tema" class="btn btn-ghost" aria-label="Alternar tema claro/escuro" title="Alternar tema">🌙</button>
+            <span id="auth-area" class="auth-area" aria-live="polite"></span>
+          </div>
+        </nav>
+        <button id="btn-menu" class="btn btn-ghost btn-menu" aria-label="Abrir menu de navegação" aria-expanded="false" aria-controls="nav-links">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="container" id="conteudo">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-texto">
+          <span class="badge">Simulados com correção no servidor</span>
+          <h1 id="hero-title">Aprenda.<br>Supere. Evolua.</h1>
+          <p>Estude pra prova competindo de verdade — não contra o relógio, contra o quanto você ainda não sabe. Entre numa sala, responda no seu ritmo e veja exatamente o que revisar antes da prova valer.</p>
+          <div style="display:flex; gap:12px; flex-wrap:wrap">
+            <button class="btn btn-primary" id="btn-comecar" aria-label="Começar a estudar">Começar a estudar</button>
+            <a class="btn btn-ghost" href="#salas">Explorar salas</a>
+          </div>
+          <div class="chip-linha" aria-label="Diferenciais">
+            <span class="chip">Correção no servidor</span>
+            <span class="chip">Gabarito protegido</span>
+            <span class="chip">Ranking ao vivo</span>
+          </div>
         </div>
-      </div>
-      <div class="card" style="display:flex; align-items:center; justify-content:center; min-height:160px; flex-direction:column; gap:8px">
-        <div class="badge">Conhecimento → Evolução</div>
-        <div style="text-align:center; color:var(--muted); font-size:0.9rem">Simulados com correção no servidor<br><small>Tempo validado, gabarito protegido</small></div>
-      </div>
-    </section>
-
-    <section id="salas" style="margin-top:32px" aria-labelledby="salas-title">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px">
-        <div>
-          <h2 id="salas-title">Salas abertas</h2>
-          <p style="color:var(--muted)">Simulados publicados e ativos para você praticar agora.</p>
+        <div class="progresso-preview" id="progresso-preview" aria-live="polite">
+          <strong class="pp-titulo">Seu progresso</strong>
+          <p class="pp-sub">Acompanhe sua evolução por matéria e revise o que ainda falta.</p>
+          <div class="pp-barras" id="pp-barras">
+            <div class="pp-barra"><div class="pp-barra-topo"><span>Matemática</span><span class="num">—</span></div><div class="barra"><div class="barra-preenchida" style="width:0%"></div></div></div>
+            <div class="pp-barra"><div class="pp-barra-topo"><span>Português</span><span class="num">—</span></div><div class="barra"><div class="barra-preenchida" style="width:0%"></div></div></div>
+            <div class="pp-barra"><div class="pp-barra-topo"><span>História</span><span class="num">—</span></div><div class="barra"><div class="barra-preenchida" style="width:0%"></div></div></div>
+          </div>
+          <p class="pp-frase" id="pp-frase">Entre para acompanhar seu progresso por assunto.</p>
         </div>
-        <span id="salas-status" class="badge" aria-live="polite">Carregando...</span>
-      </div>
-      <div id="salas-grid" class="grid-3" style="margin-top:16px" aria-live="polite">
-        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
-        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
-        <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
-      </div>
-      <div id="salas-error" class="state state-error" style="display:none; margin-top:12px"></div>
-      <div id="salas-empty" class="state state-empty" style="display:none; margin-top:12px">
-        <p><strong>Nenhuma sala ativa no momento.</strong><br>Volte em breve ou peça para um administrador publicar um simulado.</p>
-      </div>
-    </section>
+      </section>
 
-    <section id="admin" style="display:none; margin-top:40px; border-top:2px solid var(--primary); padding-top:24px" aria-labelledby="admin-title">
-      <h2 id="admin-title" style="font-family:var(--font-title)"><span style="color:var(--primary)">●</span> Painel Admin</h2>
-      <p style="color:var(--muted); margin:8px 0 16px">Gerencie simulados, gere questões com IA e publique salas.</p>
-      
-      <div class="card" style="margin-bottom:20px">
-        <h3 style="margin-bottom:12px">Criar novo simulado</h3>
-        <form id="admin-create-form" style="display:grid; gap:10px; grid-template-columns:1fr 1fr">
-          <input id="admin-nome" class="input" placeholder="Nome (3-80)" required style="grid-column:1/-1" />
-          <input id="admin-desc" class="input" placeholder="Descrição" style="grid-column:1/-1" />
-          <select id="admin-materia" class="input"><option value="">Matéria</option></select>
-          <input id="admin-assuntos" class="input" placeholder="Assuntos separados por vírgula" required />
-          <select id="admin-qtd" class="input"><option value="10">10 questões</option><option value="20">20</option><option value="30">30</option><option value="40">40</option><option value="50">50</option></select>
-          <select id="admin-dif" class="input"><option value="medio">Médio</option><option value="facil">Fácil</option><option value="dificil">Difícil</option><option value="muito_dificil">Muito difícil</option><option value="personalizado">Personalizado</option></select>
-          <select id="admin-tempo" class="input"><option value="30">30s / questão</option><option value="15">15s</option><option value="45">45s</option><option value="60">60s</option><option value="0">Sem limite</option></select>
-          <button class="btn btn-primary" type="submit" style="grid-column:1/-1">Criar simulado (Rascunho)</button>
-          <div id="admin-create-msg" style="grid-column:1/-1; font-size:0.85rem; min-height:1.2em" aria-live="polite"></div>
-        </form>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
-          <h3>Salas (todas)</h3>
-          <button class="btn btn-ghost" id="admin-refresh" style="padding:6px 12px; font-size:0.85rem">Atualizar</button>
+      <section id="salas" style="margin-top:32px" aria-labelledby="salas-title">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px">
+          <div>
+            <h2 id="salas-title">Salas abertas</h2>
+            <p style="color:var(--muted)">Simulados publicados e ativos para você praticar agora.</p>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+            <span id="salas-status" class="badge" aria-live="polite">Carregando...</span>
+            <input id="codigo-input" class="input" style="width:170px; padding:6px 10px" placeholder="Código da sala (ABC123)" maxlength="6" aria-label="Código da sala para entrar" />
+            <button id="btn-codigo" class="btn btn-ghost" style="padding:6px 12px; font-size:0.85rem">Entrar com código</button>
+            <span id="codigo-msg" style="font-size:0.85rem; color:var(--muted)" aria-live="polite"></span>
+          </div>
         </div>
-        <div id="admin-grid" style="display:flex; flex-direction:column; gap:12px" aria-live="polite"></div>
-        <div id="admin-empty" class="state state-empty" style="display:none; margin-top:12px">Nenhuma sala ainda. Crie a primeira acima.</div>
+        <div id="salas-grid" class="grid-3" style="margin-top:16px" aria-live="polite">
+          <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+          <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+          <div class="card skeleton" style="height:120px" aria-hidden="true"></div>
+        </div>
+        <div id="salas-error" class="state state-error" style="display:none; margin-top:12px"></div>
+        <div id="salas-empty" class="state state-empty" style="display:none; margin-top:12px">
+          <p><strong>Nenhuma sala ativa no momento.</strong><br>Volte em breve ou peça para um administrador publicar um simulado.</p>
+        </div>
+      </section>
+
+      <!-- Fase D — Execução do simulado (M1/B3) -->
+      <section id="execucao" aria-labelledby="exec-title" style="display:none; margin-top:28px">
+        <div id="exec-cabecalho" class="card" style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <div>
+            <h2 id="exec-titulo" style="font-family:var(--font-title)"></h2>
+            <div id="exec-progresso" style="color:var(--muted); font-size:0.9rem"></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+            <span id="exec-timer" aria-live="polite"></span>
+            <button class="btn btn-ghost" id="exec-sair" style="padding:8px 14px">Sair (retomar depois)</button>
+          </div>
+        </div>
+        <div id="exec-card" class="card" style="padding:28px" aria-live="polite"></div>
+        <div id="exec-aviso" class="state" style="display:none; margin-top:14px"></div>
+      </section>
+
+      <!-- Fase D — Resultado com explicações (M2) -->
+      <section id="resultado" aria-labelledby="res-title" style="display:none; margin-top:28px">
+        <div id="res-resumo" style="margin-bottom:18px"></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px">
+          <button class="btn btn-primary" id="res-ranking">Ver ranking da sala</button>
+          <button class="btn btn-ghost" id="res-voltar">← Voltar para salas</button>
+        </div>
+        <h3 style="font-family:var(--font-title); margin-bottom:8px">Revisão por questão</h3>
+        <div id="res-questoes" style="display:flex; flex-direction:column; gap:16px" aria-live="polite"></div>
+        <div id="res-msg" class="state state-error" style="display:none; margin-top:12px"></div>
+      </section>
+
+      <!-- Fase E — Ranking por sala (M3) -->
+      <section id="ranking" aria-labelledby="rank-title" style="display:none; margin-top:28px">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <h2 id="rank-title" style="font-family:var(--font-title)">Desempenho da turma</h2>
+          <select id="rank-sala" class="input" style="max-width:340px" aria-label="Escolher sala"></select>
+          <button class="btn btn-ghost" id="rank-voltar" style="padding:8px 14px">← Voltar</button>
+        </div>
+        <p style="color:var(--muted); margin:8px 0 16px">Critério: mais acertos → maior pontuação → menor tempo.</p>
+        <div id="rank-grid" style="display:flex; flex-direction:column; gap:10px" aria-live="polite"></div>
+        <div id="rank-msg" class="state state-empty" style="display:none; margin-top:12px"></div>
+      </section>
+
+      <!-- Fase E — Meu histórico (M4) -->
+      <section id="historico" aria-labelledby="hist-title" style="display:none; margin-top:28px">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <h2 id="hist-title" style="font-family:var(--font-title)">Meu progresso</h2>
+          <button class="btn btn-ghost" id="hist-voltar" style="padding:8px 14px">← Voltar</button>
+        </div>
+        <div id="hist-stats" style="margin:14px 0 20px"></div>
+        <div id="hist-lista" style="display:flex; flex-direction:column; gap:10px" aria-live="polite"></div>
+        <div id="hist-msg" class="state state-empty" style="display:none; margin-top:12px"></div>
+      </section>
+
+      <section id="admin" style="display:none; margin-top:40px; border-top:2px solid var(--primary); padding-top:24px" aria-labelledby="admin-title">
+        <h2 id="admin-title" style="font-family:var(--font-title)"><span style="color:var(--primary)">●</span> Painel Admin</h2>
+        <p style="color:var(--muted); margin:8px 0 16px">Gerencie simulados, gere questões com IA e publique salas.</p>
+
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="margin-bottom:12px">Criar novo simulado</h3>
+          <form id="admin-create-form" style="display:grid; gap:10px; grid-template-columns:1fr 1fr">
+            <input id="admin-nome" class="input" placeholder="Nome (3-80)" required style="grid-column:1/-1" />
+            <input id="admin-desc" class="input" placeholder="Descrição" style="grid-column:1/-1" />
+            <select id="admin-materia" class="input"><option value="">Matéria</option></select>
+            <input id="admin-assuntos" class="input" placeholder="Assuntos separados por vírgula" required />
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--muted)">
+              <input id="admin-qtd" class="input" type="number" min="5" max="50" step="1" value="10" required aria-label="Quantidade de questões (5 a 50)" style="padding:10px 12px" />
+              questões (5–50)
+            </label>
+            <select id="admin-dif" class="input"><option value="medio">Médio</option><option value="facil">Fácil</option><option value="dificil">Difícil</option><option value="muito_dificil">Muito difícil</option><option value="personalizado">Personalizado</option></select>
+            <select id="admin-tempo" class="input"><option value="30">30s / questão</option><option value="15">15s</option><option value="45">45s</option><option value="60">60s</option><option value="0">Sem limite</option></select>
+            <button class="btn btn-primary" type="submit" style="grid-column:1/-1">Criar simulado (Rascunho)</button>
+            <div id="admin-create-msg" style="grid-column:1/-1; font-size:0.85rem; min-height:1.2em" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+            <h3>Salas (todas)</h3>
+            <button class="btn btn-ghost" id="admin-refresh" style="padding:6px 12px; font-size:0.85rem">Atualizar</button>
+          </div>
+          <div id="admin-grid" style="display:flex; flex-direction:column; gap:12px" aria-live="polite"></div>
+          <div id="admin-empty" class="state state-empty" style="display:none; margin-top:12px">Nenhuma sala ainda. Crie a primeira acima.</div>
+        </div>
+
+        <!-- M5 — Revisão das questões geradas pela IA antes de publicar -->
+        <div id="admin-review" class="card" style="display:none; margin-top:16px">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap">
+            <h3 id="review-titulo" style="font-family:var(--font-title)">Revisar questões</h3>
+            <div style="display:flex; gap:8px; flex-wrap:wrap">
+              <button class="btn btn-ghost" id="review-force" style="padding:6px 12px; font-size:0.85rem">Regenerar todas</button>
+              <button class="btn btn-ghost" id="review-fechar" style="padding:6px 12px; font-size:0.85rem">Fechar revisão</button>
+            </div>
+          </div>
+          <p id="review-aviso" class="state state-error" style="display:none; margin:10px 0"></p>
+          <div id="review-msg" style="font-size:0.85rem; color:var(--muted); min-height:1.2em; margin:6px 0" aria-live="polite"></div>
+          <div id="review-questoes" style="display:flex; flex-direction:column; gap:14px; margin-top:8px" aria-live="polite"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <strong>NIVORA</strong>
+      <span>Aprenda. Supere. Evolua.</span>
+      <div class="rodape-links">
+        <a href="#salas" id="rodape-salas">Salas</a>
+        <a href="#ranking" id="rodape-ranking">Ranking</a>
+        <a href="/api/health" target="_blank" rel="noopener">API Health</a>
       </div>
-    </section>
-  </main>
+      <span id="footer-stats" aria-live="polite">Carregando...</span>
+    </footer>
+  </div>
 
-  <footer style="margin-top:40px; padding:24px; text-align:center; color:var(--muted); border-top:1px solid var(--border); width:100%">
-    <strong>NIVORA</strong> — Aprenda. Supere. Evolua. · Fase 10 UI/UX — <a href="/api/health" style="color:var(--primary)">API Health</a> · <span id="footer-stats" style="color:var(--muted)">Carregando...</span>
-  </footer>
-
-  <!-- Auth modal (Fase 2) — acessível -->
-  <dialog id="auth-dialog" aria-labelledby="auth-title" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
+  <!-- Fase C — Esqueci minha senha -->
+  <dialog id="esqueci-dialog" aria-labelledby="esqueci-title" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
     <div style="padding:24px">
-      <h3 id="auth-title" style="font-family:var(--font-title); margin-bottom:12px">Entrar na Nivora</h3>
-      <div style="display:flex; gap:8px; margin-bottom:16px" role="tablist">
-        <button class="btn btn-primary" id="tab-login" style="flex:1" role="tab" aria-selected="true">Entrar</button>
-        <button class="btn btn-ghost" id="tab-register" style="flex:1" role="tab" aria-selected="false">Criar conta</button>
-      </div>
-      <form id="auth-form" style="display:flex; flex-direction:column; gap:10px" novalidate>
-        <input id="auth-nick" class="input" placeholder="Nick (só cadastro)" aria-label="Nick" style="display:none" />
-        <input id="auth-email" class="input" type="email" placeholder="E-mail" required aria-label="E-mail" />
-        <input id="auth-senha" class="input" type="password" placeholder="Senha (mín 8)" required aria-label="Senha" minlength="8" />
-        <button class="btn btn-primary" type="submit" id="auth-submit">Entrar</button>
-        <div id="auth-msg" style="font-size:0.85rem; color:var(--error); min-height:1.2em" aria-live="polite"></div>
+      <h3 id="esqueci-title" style="font-family:var(--font-title); margin-bottom:12px">Recuperar senha</h3>
+      <form id="esqueci-form" style="display:flex; flex-direction:column; gap:10px" novalidate>
+        <input id="esqueci-email" class="input" type="email" placeholder="Seu e-mail cadastrado" required aria-label="E-mail" />
+        <button class="btn btn-primary" type="submit">Enviar link de recuperação</button>
+        <div id="esqueci-msg" style="font-size:0.85rem; color:var(--muted); min-height:1.2em; line-height:1.5" aria-live="polite"></div>
       </form>
-      <button onclick="document.getElementById('auth-dialog').close()" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
+      <button data-close-dialog="esqueci-dialog" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
+    </div>
+  </dialog>
+
+  <!-- Fase C — Redefinir senha (via link do e-mail) -->
+  <dialog id="reset-dialog" aria-labelledby="reset-title" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:420px; width:90%">
+    <div style="padding:24px">
+      <h3 id="reset-title" style="font-family:var(--font-title); margin-bottom:8px">Redefinir senha</h3>
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:14px">Escolha uma nova senha para sua conta.</p>
+      <form id="reset-form" style="display:flex; flex-direction:column; gap:10px" novalidate>
+        <input id="reset-senha" class="input" type="password" placeholder="Nova senha (mín. 8)" required aria-label="Nova senha" minlength="8" />
+        <input id="reset-confirma" class="input" type="password" placeholder="Confirmar nova senha" required aria-label="Confirmar nova senha" />
+        <button class="btn btn-primary" type="submit">Redefinir e fazer login</button>
+        <div id="reset-msg" style="font-size:0.85rem; color:var(--muted); min-height:1.2em; line-height:1.5" aria-live="polite"></div>
+      </form>
+      <button data-close-dialog="reset-dialog" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
+    </div>
+  </dialog>
+
+  <!-- Fase E — Editar perfil (M10) -->
+  <dialog id="perfil-dialog" aria-labelledby="perfil-title" style="border:1px solid var(--border); border-radius:16px; padding:0; max-width:440px; width:90%">
+    <div style="padding:24px">
+      <h3 id="perfil-title" style="font-family:var(--font-title); margin-bottom:4px">Meu perfil</h3>
+      <p id="perfil-email" style="font-size:0.85rem; color:var(--muted); margin-bottom:14px"></p>
+      <form id="perfil-form" style="display:flex; flex-direction:column; gap:10px" novalidate>
+        <label style="font-size:0.85rem; color:var(--muted)">Nick</label>
+        <input id="perfil-nick" class="input" maxlength="30" aria-label="Nick" />
+        <label style="font-size:0.85rem; color:var(--muted)">Avatar (emoji ou letra, máx. 8)</label>
+        <input id="perfil-avatar" class="input" maxlength="8" aria-label="Avatar" />
+        <hr style="border:none; border-top:1px solid var(--border); margin:6px 0" />
+        <label style="font-size:0.85rem; color:var(--muted)">Trocar senha (opcional)</label>
+        <input id="perfil-senha-atual" class="input" type="password" placeholder="Senha atual" aria-label="Senha atual" />
+        <input id="perfil-senha-nova" class="input" type="password" placeholder="Nova senha (mín. 8)" aria-label="Nova senha" />
+        <button class="btn btn-primary" type="submit">Salvar alterações</button>
+        <div id="perfil-msg" style="font-size:0.85rem; color:var(--muted); min-height:1.2em" aria-live="polite"></div>
+      </form>
+      <button data-close-dialog="perfil-dialog" style="margin-top:12px; background:none; border:none; color:var(--muted); cursor:pointer">Fechar</button>
     </div>
   </dialog>
 

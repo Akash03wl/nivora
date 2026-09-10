@@ -39,8 +39,8 @@ function createMockDB() {
         run: () => ({ meta: { changes: 0 } })
       };
     },
+    batch(statements: any[]) { sqlite.exec('BEGIN'); try { const results = statements.map(s => s.run()); sqlite.exec('COMMIT'); return results; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } },
     exec(sql: string) { sqlite.exec(sql); return { success: true }; },
-    batch: () => []
   } as unknown as D1Database;
   return wrap;
 }
@@ -134,11 +134,12 @@ describe('Auth Fase 2', () => {
 
   it('rate limit bloqueia após limite', async () => {
     // cria DB fresco para testar rate limit isolado
-    for (let i = 0; i < 5; i++) {
+    // B16: limite de cadastro subiu para 20/min (cadastro em lote de turma é cenário esperado)
+    for (let i = 0; i < 20; i++) {
       await request(app, 'http://test/api/auth/register', 'POST', { nick: `u${i}`, email: `u${i}@ex.com`, senha: 'senha12345' });
     }
-    // 6ª tentativa na mesma janela deve ser 429 (limite 5/min)
-    const r = await request(app, 'http://test/api/auth/register', 'POST', { nick: 'u5', email: 'u5@ex.com', senha: 'senha12345' });
+    // 21ª tentativa na mesma janela deve ser 429 (limite 20/min)
+    const r = await request(app, 'http://test/api/auth/register', 'POST', { nick: 'u20', email: 'u20@ex.com', senha: 'senha12345' });
     expect(r.status).toBe(429);
   });
 });
