@@ -3,6 +3,9 @@ function escapeHTML(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 let modo = 'login'; // login | register
+let usuarioAtual = null;
+let salasDisponiveis = [];
+const materias = { geral: 'Conhecimentos gerais', matematica: 'Matemática', portugues: 'Português', historia: 'História', geografia: 'Geografia', ciencias: 'Ciências' };
 
 const authArea = document.getElementById('auth-area');
 const dialog = document.getElementById('auth-dialog');
@@ -19,6 +22,9 @@ const btnComecar = document.getElementById('btn-comecar');
 function setModo(m) {
   modo = m;
   const isLogin = m === 'login';
+  tabLogin.setAttribute('aria-selected', String(isLogin));
+  tabRegister.setAttribute('aria-selected', String(!isLogin));
+  senhaEl.autocomplete = isLogin ? 'current-password' : 'new-password';
   titleEl.textContent = isLogin ? 'Entrar na Nivora' : 'Criar conta na Nivora';
   nickEl.style.display = isLogin ? 'none' : 'block';
   nickEl.required = !isLogin;
@@ -32,13 +38,15 @@ function setModo(m) {
 
 tabLogin?.addEventListener('click', () => setModo('login'));
 tabRegister?.addEventListener('click', () => setModo('register'));
-btnComecar?.addEventListener('click', () => { setModo('login'); dialog.showModal(); });
+btnComecar?.addEventListener('click', () => { if (usuarioAtual) { document.getElementById('salas').scrollIntoView(); return; } setModo('login'); dialog.showModal(); });
 
 async function refreshAuth() {
   try {
     const r = await fetch('/api/auth/me', { credentials: 'same-origin' });
     if (r.ok) {
       const d = await r.json();
+      usuarioAtual = d.usuario;
+      btnComecar.textContent = 'Continuar estudando';
       const isAdmin = d.usuario.papel === 'ADMIN';
       authArea.innerHTML = `<span style="color:var(--muted)">Olá, <strong>${escapeHTML(d.usuario.nick)}</strong> • ${d.usuario.papel}</span> <button id="btn-logout" class="btn" style="padding:6px 12px; background:var(--card-2); border:1px solid var(--border)">Sair</button>`;
       document.getElementById('btn-logout')?.addEventListener('click', async () => {
@@ -59,6 +67,8 @@ async function refreshAuth() {
         if (adminSec) adminSec.style.display = 'none';
       }
     } else {
+      usuarioAtual = null;
+      btnComecar.textContent = 'Entrar na minha conta';
       authArea.innerHTML = `<button id="btn-entrar" class="btn btn-primary" style="padding:8px 14px">Entrar</button>`;
       document.getElementById('btn-entrar')?.addEventListener('click', () => { setModo('login'); dialog.showModal(); });
       const navAdmin = document.getElementById('nav-admin');
@@ -111,12 +121,38 @@ form?.addEventListener('submit', async (e) => {
 setModo('login');
 refreshAuth();
 
-// Footer stats + health
-fetch('/api/health').then(r=>r.json()).then(d=>{
-  console.log('health', d);
-  const el = document.getElementById('footer-stats');
-  if (el) el.textContent = `API ${d.db} • ${d.env} • ${new Date(d.time).toLocaleDateString('pt-BR')}`;
-}).catch(()=>{});
+function renderSalas() {
+  const busca = document.getElementById('room-search').value.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const materia = document.getElementById('room-subject').value;
+  const rooms = salasDisponiveis.filter(s => {
+    const texto = `${s.nome} ${s.descricao || ''} ${s.assuntos || ''} ${materias[s.materia_id] || s.materia_id || ''}`.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return (!materia || s.materia_id === materia) && texto.includes(busca);
+  });
+  document.getElementById('salas-status').textContent = `${rooms.length} ${rooms.length === 1 ? 'sala disponível' : 'salas disponíveis'}`;
+  const empty = document.getElementById('salas-empty');
+  empty.style.display = rooms.length ? 'none' : 'block';
+  empty.innerHTML = salasDisponiveis.length ? '<strong>Nenhuma sala com esses filtros.</strong><p>Tente outro assunto ou selecione todas as matérias.</p>' : '<strong>Seu próximo desafio está a caminho.</strong><p>Ainda não há salas disponíveis. Volte em breve para explorar novos simulados.</p>';
+  document.getElementById('salas-grid').innerHTML = rooms.map(s => `<article class="card room-card">
+    <div class="room-top"><span class="room-symbol" aria-hidden="true">${s.materia_id === 'matematica' ? '∑' : '↗'}</span><span class="badge">${s.status === 'ACTIVE' ? 'Aberta para estudar' : 'Publicada'}</span></div>
+    <span class="eyebrow">${escapeHTML(materias[s.materia_id] || s.materia_id || 'Conhecimentos gerais')}</span>
+    <h3>${escapeHTML(s.nome)}</h3><p>${escapeHTML(s.descricao || 'Um novo espaço para colocar seus conhecimentos em prática.')}</p>
+    <div class="room-meta"><span>${escapeHTML(s.quantidade)} questões</span><span>·</span><span>${escapeHTML(({facil:'Fácil',medio:'Médio',dificil:'Difícil',muito_dificil:'Muito difícil',personalizado:'Personalizado'})[s.dificuldade] || s.dificuldade)}</span><span>·</span><span>${Number(s.tempo_por_questao) ? `${escapeHTML(s.tempo_por_questao)}s por questão` : 'Sem limite de tempo'}</span></div>
+    <button class="btn btn-ghost" data-room="${escapeHTML(s.id)}">Conhecer simulado <span aria-hidden="true">↗</span></button></article>`).join('');
+}
+document.getElementById('room-search').addEventListener('input', renderSalas);
+document.getElementById('room-subject').addEventListener('change', renderSalas);
+document.getElementById('rooms-retry').addEventListener('click', carregarSalas);
+document.getElementById('salas-grid').addEventListener('click', e => {
+  const button = e.target.closest('[data-room]');
+  if (!button) return;
+  const room = salasDisponiveis.find(s => s.id === button.dataset.room);
+  if (!room) return;
+  let details = document.getElementById('room-details');
+  if (!details) { details = document.createElement('dialog'); details.id = 'room-details'; details.setAttribute('aria-labelledby', 'room-details-title'); document.body.append(details); }
+  details.innerHTML = `<span class="eyebrow">${escapeHTML(materias[room.materia_id] || 'SIMULADO')}</span><h2 id="room-details-title">${escapeHTML(room.nome)}</h2><p>${escapeHTML(room.descricao || 'Pratique seus conhecimentos neste simulado.')}</p><p>${escapeHTML(room.quantidade)} questões · ${Number(room.tempo_por_questao) ? `${escapeHTML(room.tempo_por_questao)} segundos por questão` : 'Sem limite de tempo'}</p><div class="state">${room.status === 'ACTIVE' ? 'A participação pelo site ainda está em preparação nesta versão. Você já pode explorar as salas disponíveis.' : 'Este simulado ainda aguarda abertura para participação.'}</div><button class="btn btn-primary" id="close-room" style="margin-top:20px">Voltar às salas</button>`;
+  details.querySelector('#close-room').addEventListener('click', () => details.close());
+  details.showModal();
+});
 
 // Fase 4/10 — listar salas com estados loading/error/empty (Fase 10)
 async function carregarSalas() {
@@ -125,6 +161,8 @@ async function carregarSalas() {
   const errorEl = document.getElementById('salas-error');
   const emptyEl = document.getElementById('salas-empty');
   if (!grid) return;
+  const controls = ['room-search', 'room-subject', 'rooms-retry'].map(id => document.getElementById(id));
+  controls.forEach(el => { el.disabled = true; });
   // loading
   if (statusEl) statusEl.textContent = 'Carregando...';
   if (errorEl) errorEl.style.display = 'none';
@@ -134,28 +172,17 @@ async function carregarSalas() {
     const r = await fetch('/api/rooms', { credentials: 'same-origin' });
     if (!r.ok) throw new Error('Falha ao carregar salas');
     const d = await r.json();
-    const rooms = d.rooms || [];
-    if (statusEl) statusEl.textContent = `${rooms.length} sala(s)`;
-    if (!rooms.length) {
-      grid.innerHTML = '';
-      if (emptyEl) emptyEl.style.display = 'block';
-      return;
-    }
-    grid.innerHTML = rooms.map((s) => {
-      const assuntos = (()=>{ try{return JSON.parse(s.assuntos||'[]').join(', ')}catch{return s.assuntos||''}})();
-      return `
-      <div class="card" style="display:flex; flex-direction:column; gap:8px">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="badge">${s.status} • ${s.dificuldade}</span>
-          ${s.codigo ? `<small style="color:var(--muted)" aria-label="Código da sala">#${escapeHTML(s.codigo)}</small>` : ''}
-        </div>
-        <strong style="font-family:var(--font-title)">${escapeHTML(s.nome)}</strong>
-        <small style="color:var(--muted); line-height:1.4">${escapeHTML(s.descricao) || 'Sem descrição'}</small>
-        <small style="color:var(--muted)">${s.quantidade} questões • ${s.tempo_por_questao}s/questão • ${escapeHTML(assuntos)}</small>
-        <button class="btn btn-primary" style="width:100%; margin-top:auto" onclick="alert('Fase 6: Entrar em ${s.nome.replace(/'/g, "\\'")} — faça login e inicie a tentativa')" aria-label="Entrar na sala ${escapeHTML(s.nome)}">Entrar</button>
-      </div>`;
-    }).join('');
+    const rooms = (d.rooms || []).filter(s => ['ACTIVE', 'PUBLISHED'].includes(s.status));
+    salasDisponiveis = rooms;
+    const subject = document.getElementById('room-subject');
+    const selectedSubject = subject.value;
+    subject.replaceChildren(new Option('Todas as matérias', ''));
+    [...new Set(rooms.map(s => s.materia_id).filter(Boolean))].sort().forEach(id => subject.add(new Option(materias[id] || id, id)));
+    subject.value = [...subject.options].some(o => o.value === selectedSubject) ? selectedSubject : '';
+    renderSalas();
+    controls.forEach(el => { el.disabled = false; });
   } catch (e) {
+    document.getElementById('rooms-retry').disabled = false;
     grid.innerHTML = '';
     if (statusEl) statusEl.textContent = 'Erro';
     if (errorEl) { errorEl.textContent = 'Erro ao carregar salas. Verifique sua conexão e tente novamente.'; errorEl.style.display = 'block'; }
