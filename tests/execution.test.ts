@@ -26,6 +26,29 @@ describe('Execução Fase 6', () => {
   beforeEach(()=>{ (global as any).__DB = mockDB(); });
   afterEach(()=>{ vi.useRealTimers(); });
 
+  it('ENEM: aceita alternativa E existente e protege gabarito e pontuação do aluno', async () => {
+    const db = (global as any).__DB;
+    db.exec(fs.readFileSync('content/enem-2026.sql','utf8'));
+    const reg = await req(app,'http://test/api/auth/register','POST',{nick:'enem-aluno',email:'enem@example.test',senha:'TesteEnem2026!'}, {}, {ENVIRONMENT:'production'});
+    const cookie = (reg.headers.get('Set-Cookie')||'').split(';')[0];
+    const base = 'http://test/api/rooms/nivora_enem_v1_quimica';
+    const start = await req(app,base+'/start','POST',{}, {Cookie:cookie});
+    expect(start.status).toBe(201);
+    const data:any = await start.json();
+    expect(data.questoes[0].alternativas).toHaveLength(5);
+    expect(data.questoes[0].correta_idx).toBeUndefined();
+    const publicQuestions:any = await (await req(app,base+'/questions','GET',undefined,{Cookie:cookie})).json();
+    expect(publicQuestions.questoes[0].correta_idx).toBeUndefined();
+    expect(publicQuestions.questoes[0].explicacao).toBeUndefined();
+    const answer = await req(app,base+'/answer','POST',{question_id:data.questoes[0].id,alternativa_idx:4},{Cookie:cookie});
+    expect(answer.status).toBe(200);
+    expect((await answer.json() as any).correta).toBe(true);
+    const invalid = await req(app,base+'/answer','POST',{question_id:data.questoes[1].id,alternativa_idx:99},{Cookie:cookie});
+    expect((await invalid.json() as any).correta).toBe(false);
+    const finish = await req(app,base+'/finish','POST',{}, {Cookie:cookie});
+    expect((await finish.json() as any).resultado.acertos).toBe(1);
+  });
+
   it('fluxo completo: start → answer → finish com proteção', async () => {
     // B8: o tempo de cada questão é medido no servidor (relógio fake avança entre chamadas)
     vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00.000Z') });

@@ -50,7 +50,7 @@ describe('Fase 11 — Integração ponta-a-ponta (fluxo mestre)', () => {
     expect(r.status).toBe(200);
     r = await req(app,`http://test/api/rooms/${roomId}/status`,'POST',{ status:'PUBLISHED' }, { Cookie: cAdmin });
     expect(r.status).toBe(200);
-    expect((await r.json() as any).room.codigo).toBeTruthy();
+    expect((await r.json() as any).room.codigo).toBeNull();
     r = await req(app,`http://test/api/rooms/${roomId}/status`,'POST',{ status:'ACTIVE' }, { Cookie: cAdmin });
     expect(r.status).toBe(200);
 

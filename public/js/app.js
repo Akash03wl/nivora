@@ -1,6 +1,6 @@
 // NIVORA — frontend (SPA)
 // Fases: Auth, Salas, Admin, Execução (M1), Resultado (M2), Ranking (M3),
-// Histórico (M4), Revisão admin (M5), Código (M6), Quantidade (M8), Tema (M9), Perfil (M10), Recuperar senha (Fase C).
+// Histórico (M4), Revisão admin (M5), Quantidade (M8), Tema (M9), Perfil (M10), Recuperar senha (Fase C).
 // Tela inicial rica: módulos pequenos e puros (js/icones.js, js/faq.js).
 import { ICONES } from './icones.js';
 import { PERGUNTAS_FAQ, proximaFaqAberta, formatarContagem } from './faq.js';
@@ -41,7 +41,7 @@ let acaoPendente = null;     // ()=>void a executar após login
 let exame = null;            // estado da execução
 let revisao = null;          // { roomId, roomNome, questoes } painel admin
 let temaAtual = null;
-const nomesMaterias = { geral: 'Conhecimentos gerais', matematica: 'Matemática', portugues: 'Português', historia: 'História', geografia: 'Geografia', ciencias: 'Ciências' };
+const nomesMaterias = { geral: 'Conhecimentos gerais', matematica: 'Matemática', portugues: 'Português', historia: 'História', geografia: 'Geografia', ciencias: 'Ciências', biologia: 'Biologia', fisica: 'Física', quimica: 'Química', humanas: 'Ciências Humanas' };
 const normalizarBusca = (texto) => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 function filtrarSalas() {
   const busca = normalizarBusca($('room-search').value);
@@ -428,7 +428,7 @@ $('perfil-form')?.addEventListener('submit', async (e) => {
   }
 });
 
-// ---------------------------------------------------------------- Home: salas + código
+// ---------------------------------------------------------------- Home: catálogo de salas
 async function carregarSalas() {
   const grid = $('salas-grid');
   const statusEl = $('salas-status');
@@ -469,7 +469,6 @@ async function carregarSalas() {
       <div class="card room-card" data-sala-card="${escapeHTML(s.id)}">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap">
           <span class="${statusCls}">${ativa ? 'Aberta para estudar' : fechada ? 'Encerrada' : 'Em breve'} · ${escapeHTML(difLabel)}</span>
-          ${s.codigo ? `<code class="mono" style="color:var(--muted); font-size:0.75rem" aria-label="Código da sala">#${escapeHTML(s.codigo)}</code>` : ''}
         </div>
         <strong class="font-title" style="font-size:1.05rem">${escapeHTML(s.nome)}</strong>
         <small style="color:var(--muted); line-height:1.4">${escapeHTML(s.descricao) || 'Sem descrição'}</small>
@@ -504,29 +503,6 @@ $('salas-grid')?.addEventListener('click', (ev) => {
   }
 });
 
-// Entrar com código (M6)
-$('btn-codigo')?.addEventListener('click', entrarPorCodigo);
-$('codigo-input')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') entrarPorCodigo(); });
-async function entrarPorCodigo() {
-  const input = $('codigo-input');
-  const msg = $('codigo-msg');
-  const codigo = (input.value || '').trim().toUpperCase();
-  if (!codigo) return;
-  msg.textContent = 'Buscando sala...';
-  try {
-    const { r, d } = await api(`/api/rooms/by-code/${encodeURIComponent(codigo)}`);
-    if (!r.ok) { msg.textContent = d.erro || 'Código não encontrado.'; return; }
-    const room = d.room;
-    msg.textContent = '';
-    if (room.status !== 'ACTIVE') {
-      mostrarAviso(room.status === 'PUBLISHED' ? `A sala "${room.nome}" ainda não foi aberta.` : room.status === 'CLOSED' ? `A sala "${room.nome}" já foi encerrada.` : 'Sala indisponível.');
-      return;
-    }
-    tryEntrar(room.id, room.nome);
-  } catch {
-    msg.textContent = 'Falha de rede.';
-  }
-}
 function mostrarAviso(texto) {
   const v = $('exec-aviso');
   if ($('execucao').style.display === 'none') {
@@ -988,6 +964,10 @@ function popularMaterias() {
     { id: 'historia', nome: 'História' },
     { id: 'geografia', nome: 'Geografia' },
     { id: 'ciencias', nome: 'Ciências' },
+    { id: 'biologia', nome: 'Biologia' },
+    { id: 'fisica', nome: 'Física' },
+    { id: 'quimica', nome: 'Química' },
+    { id: 'humanas', nome: 'Ciências Humanas' },
   ];
   mats.forEach((m) => {
     const o = document.createElement('option');
@@ -1044,7 +1024,6 @@ async function carregarAdmin() {
           <span class="badge">${s.status}</span>
         </div>
         <small>${escapeHTML(s.descricao) || ''} · ${escapeHTML(s.materia_id || 'geral')} · ${escapeHTML(assuntos)} · ${s.quantidade}Q · ${s.tempo_por_questao === 0 ? 'sem limite' : s.tempo_por_questao + 's'}</small>
-        ${s.codigo ? `<small><code>#${escapeHTML(s.codigo)}</code></small>` : ''}
         <div class="acoes">
           <button class="btn btn-ghost" data-admin-action="gerarIA" data-id="${s.id}">Gerar IA</button>
           <button class="btn btn-ghost" data-admin-action="revisarQuestoes" data-id="${s.id}">Revisar questões</button>
@@ -1091,7 +1070,7 @@ window.mudarStatus = async (id, st) => {
   try {
     const { r, d } = await api(`/api/rooms/${id}/status`, { method: 'POST', body: JSON.stringify({ status: st }) });
     if (!r.ok) { if (el) el.textContent = d.erro || 'Erro'; return; }
-    if (el) el.textContent = `Status: ${d.room.status}${d.room.codigo ? ' · Código: ' + d.room.codigo : ''}`;
+    if (el) el.textContent = `Status: ${d.room.status}`;
     if (st === 'PUBLISHED' || st === 'ACTIVE') fecharRevisao(false);
     carregarSalas(); carregarAdmin();
   } catch { if (el) el.textContent = 'Falha'; }

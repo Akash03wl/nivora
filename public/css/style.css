@@ -383,7 +383,6 @@ html, body { overflow-x: clip; }
 }
 
 @media (max-width:520px){
-  #codigo-input { width:100% !important; }
   #salas > div:first-child { flex-direction:column; align-items:stretch; }
   #salas > div:first-child > div:last-child { justify-content:space-between; }
   .hero .btn { width:100%; }

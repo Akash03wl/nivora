@@ -70,7 +70,7 @@ describe('Rooms Fase 4', () => {
       expect(rr.status).toBe(200);
       const jd:any = await rr.json();
       expect(jd.room.status).toBe(st);
-      if (st === 'PUBLISHED' || st === 'ACTIVE') expect(jd.room.codigo).toBeTruthy();
+      if (st === 'PUBLISHED' || st === 'ACTIVE') expect(jd.room.codigo).toBeNull();
     }
     // transição inválida ARCHIVED->ACTIVE deve falhar 409
     const fail = await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'ACTIVE' }, { Cookie: cookieAdmin });
@@ -103,25 +103,8 @@ describe('Rooms Fase 4', () => {
     expect(j.rooms.some((x:any)=>x.id===idDraft)).toBe(true);
   });
 
-  it('M6: entrar por código (by-code) devolve a sala publicada e 404 para código inexistente', async () => {
-    let r = await req(app, 'http://test/api/auth/register', 'POST', { nick: 'admcode', email: 'admcode@ex.com', senha: 'senha12345' });
-    const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
-    r = await req(app, 'http://test/api/rooms', 'POST', { nome: 'Por código', assuntos: ['X'], quantidade: 10, tempo_por_questao: 30 }, { Cookie: cA });
-    const id = (await r.json() as any).room.id;
-    // publica para gerar o código
-    await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'REVIEW' }, { Cookie: cA });
-    const pub = await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'PUBLISHED' }, { Cookie: cA });
-    const codigo = (await pub.json() as any).room.codigo;
-    expect(codigo).toBeTruthy();
-    // anônimo encontra pelo código
-    const byCode = await req(app, `http://test/api/rooms/by-code/${codigo}`, 'GET');
-    expect(byCode.status).toBe(200);
-    expect((await byCode.json() as any).room.id).toBe(id);
-    // código inválido → 404
-    const nao = await req(app, 'http://test/api/rooms/by-code/ZZZ999', 'GET');
-    expect(nao.status).toBe(404);
-    // sala em DRAFT (sem código visível) também não é encontrada por código aleatório
-    expect(nao.status).toBe(404);
+  it('entrada por codigo foi removida', async () => {
+    expect((await req(app, 'http://test/api/rooms/by-code/ABC123', 'GET')).status).toBe(404);
   });
 
   it('M5: regenerar questão individual só em DRAFT/REVIEW e mantém o lote válido', async () => {

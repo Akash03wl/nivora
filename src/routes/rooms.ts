@@ -18,12 +18,6 @@ const TRANSICOES: Record<string, string[]> = {
   ARCHIVED: []
 };
 
-function gerarCodigo(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let c = '';
-  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
-  return c;
-}
 
 export const rooms = new Hono<{ Bindings: Env }>();
 
@@ -110,16 +104,6 @@ rooms.get('/:id', async (c) => {
   return c.json({ room: { ...room, assuntos: JSON.parse(room.assuntos || '[]') } });
 });
 
-// M6 — GET /api/rooms/by-code/:codigo — entrar em sala pelo código (público, como a listagem)
-rooms.get('/by-code/:codigo', async (c) => {
-  const codigo = String(c.req.param('codigo') || '').trim().toUpperCase();
-  if (!codigo) return c.json({ erro: 'Código obrigatório.' }, 400);
-  const room: any = await primeira(c.env.DB, 'SELECT * FROM rooms WHERE codigo = ?', codigo);
-  if (!room) return c.json({ erro: 'Sala não encontrada para este código.' }, 404);
-  if ([STATUS.DRAFT, STATUS.REVIEW, STATUS.ARCHIVED].includes(room.status)) return c.json({ erro: 'Sala não disponível para este código.' }, 404);
-  return c.json({ room: { ...room, assuntos: JSON.parse(room.assuntos || '[]') } });
-});
-
 // PATCH /api/rooms/:id — editar (ADMIN)
 rooms.patch('/:id', async (c) => {
   const chk = await exigirAdmin(c);
@@ -190,18 +174,8 @@ rooms.post('/:id/status', async (c) => {
   const permitidos = TRANSICOES[atual] || [];
   if (!permitidos.includes(novo)) return c.json({ erro: `Transição ${atual} → ${novo} não permitida. Permitidas: ${permitidos.join(', ') || 'nenhuma'}` }, 409);
 
-  let codigo = room.codigo;
-  // gera código ao publicar/ativar se ainda não tem
-  if (!codigo && (novo === STATUS.PUBLISHED || novo === STATUS.ACTIVE)) {
-    for (let i=0;i<5;i++) {
-      const cand = gerarCodigo();
-      const existe = await primeira(c.env.DB, 'SELECT id FROM rooms WHERE codigo = ?', cand);
-      if (!existe) { codigo = cand; break; }
-    }
-  }
   const sets = ['status = ?', 'atualizado_em = ?'];
   const params: unknown[] = [novo, new Date().toISOString()];
-  if (codigo && codigo !== room.codigo) { sets.push('codigo = ?'); params.push(codigo); }
   params.push(id);
   await executar(c.env.DB, `UPDATE rooms SET ${sets.join(', ')} WHERE id = ?`, ...params);
   await executar(c.env.DB, 'INSERT INTO admin_logs (id, user_id, acao, alvo_tipo, alvo_id, detalhes) VALUES (?, ?, ?, ?, ?, ?)', novoId('log_'), (chk.user as any).id, 'alterar_status', 'rooms', id, JSON.stringify({ de: atual, para: novo }));

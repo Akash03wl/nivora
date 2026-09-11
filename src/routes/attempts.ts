@@ -93,6 +93,9 @@ attempts.post('/:id/answer', async (c) => {
 
   const q: any = await primeira(c.env.DB, 'SELECT id, correta_idx FROM questions WHERE id = ? AND room_id = ?', questionId, id);
   if (!q) return c.json({ erro: 'Questão não encontrada.' }, 404);
+  const opcaoExiste = alternativa !== null && Number.isInteger(alternativa) && alternativa >= 0
+    ? await primeira(c.env.DB, 'SELECT id FROM question_options WHERE question_id = ? AND ordem = ?', questionId, alternativa)
+    : null;
   const ja = await primeira(c.env.DB, 'SELECT id FROM answers WHERE attempt_id = ? AND question_id = ?', att.id, questionId);
   if (ja) return c.json({ erro: 'Questão já respondida. Não é possível alterar.', codigo: 'ALREADY_ANSWERED' }, 409);
 
@@ -110,7 +113,7 @@ attempts.post('/:id/answer', async (c) => {
   if (expirouServidor) {
     alternativaFinal = null;
     correta = 0;
-  } else if (alternativaFinal !== null && Number.isInteger(alternativaFinal) && alternativaFinal >= 0 && alternativaFinal < 4) {
+  } else if (opcaoExiste) {
     correta = alternativaFinal === q.correta_idx ? 1 : 0;
   } else {
     alternativaFinal = null;
