@@ -31,6 +31,7 @@ function createMockDB() {
         }
       };
     },
+    batch(statements: any[]) { sqlite.exec('BEGIN'); try { const results = statements.map(s => s.run()); sqlite.exec('COMMIT'); return results; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } },
     exec(sql: string) { sqlite.exec(sql); return { success: true }; }
   } as unknown as D1Database;
   return wrap;
@@ -100,6 +101,62 @@ describe('Rooms Fase 4', () => {
     list = await req(app, 'http://test/api/rooms?status=DRAFT', 'GET', undefined, { Cookie: cA });
     j = await list.json();
     expect(j.rooms.some((x:any)=>x.id===idDraft)).toBe(true);
+  });
+
+  it('M6: entrar por código (by-code) devolve a sala publicada e 404 para código inexistente', async () => {
+    let r = await req(app, 'http://test/api/auth/register', 'POST', { nick: 'admcode', email: 'admcode@ex.com', senha: 'senha12345' });
+    const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
+    r = await req(app, 'http://test/api/rooms', 'POST', { nome: 'Por código', assuntos: ['X'], quantidade: 10, tempo_por_questao: 30 }, { Cookie: cA });
+    const id = (await r.json() as any).room.id;
+    // publica para gerar o código
+    await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'REVIEW' }, { Cookie: cA });
+    const pub = await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'PUBLISHED' }, { Cookie: cA });
+    const codigo = (await pub.json() as any).room.codigo;
+    expect(codigo).toBeTruthy();
+    // anônimo encontra pelo código
+    const byCode = await req(app, `http://test/api/rooms/by-code/${codigo}`, 'GET');
+    expect(byCode.status).toBe(200);
+    expect((await byCode.json() as any).room.id).toBe(id);
+    // código inválido → 404
+    const nao = await req(app, 'http://test/api/rooms/by-code/ZZZ999', 'GET');
+    expect(nao.status).toBe(404);
+    // sala em DRAFT (sem código visível) também não é encontrada por código aleatório
+    expect(nao.status).toBe(404);
+  });
+
+  it('M5: regenerar questão individual só em DRAFT/REVIEW e mantém o lote válido', async () => {
+    let r = await req(app, 'http://test/api/auth/register', 'POST', { nick: 'admreg', email: 'admreg@ex.com', senha: 'senha12345' });
+    const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
+    r = await req(app, 'http://test/api/rooms', 'POST', { nome: 'Revisar', assuntos: ['Clima'], quantidade: 10, tempo_por_questao: 30 }, { Cookie: cA });
+    const id = (await r.json() as any).room.id;
+    await req(app, `http://test/api/rooms/${id}/generate`,'POST',{}, { Cookie: cA });
+    const qs = (await (await req(app, `http://test/api/rooms/${id}/questions`, 'GET', undefined, { Cookie: cA })).json() as any).questoes;
+    expect(qs).toHaveLength(10);
+    const alvo = qs[0];
+    // USER não pode regenerar
+    let r2 = await req(app, 'http://test/api/auth/register', 'POST', { nick: 'usrreg', email: 'usrreg@ex.com', senha: 'senha12345' });
+    const cU = (r2.headers.get('Set-Cookie')||'').split(';')[0];
+    const neg = await req(app, `http://test/api/rooms/${id}/questions/${alvo.id}/regenerate`, 'POST', {}, { Cookie: cU });
+    expect(neg.status).toBe(403);
+    // ADMIN regenera a primeira questão (mock evita duplicar o enunciado 1 com as demais)
+    const reg = await req(app, `http://test/api/rooms/${id}/questions/${alvo.id}/regenerate`, 'POST', {}, { Cookie: cA });
+    expect(reg.status).toBe(200);
+    const rj:any = await reg.json();
+    expect(rj.ok).toBe(true);
+    expect(rj.questao.id).toBe(alvo.id);
+    expect(rj.questao.alternativas).toHaveLength(4);
+    expect(rj.questao.correta_idx).toBeGreaterThanOrEqual(0);
+    expect(rj.questao.correta_idx).toBeLessThan(4);
+    // lote continua íntegro (mesmo tamanho, enunciados únicos)
+    const qs2 = (await (await req(app, `http://test/api/rooms/${id}/questions`, 'GET', undefined, { Cookie: cA })).json() as any).questoes;
+    expect(qs2).toHaveLength(10);
+    expect(new Set(qs2.map((q:any)=>q.enunciado)).size).toBe(10);
+    // em ACTIVE a regeneração é bloqueada (409)
+    await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'REVIEW' }, { Cookie: cA });
+    await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'PUBLISHED' }, { Cookie: cA });
+    await req(app, `http://test/api/rooms/${id}/status`, 'POST', { status: 'ACTIVE' }, { Cookie: cA });
+    const bloqueado = await req(app, `http://test/api/rooms/${id}/questions/${alvo.id}/regenerate`, 'POST', {}, { Cookie: cA });
+    expect(bloqueado.status).toBe(409);
   });
 
   it('delete bloqueia se ACTIVE', async () => {

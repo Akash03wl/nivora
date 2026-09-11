@@ -47,7 +47,9 @@ export function lerCookie(req: Request, nome: string): string | null {
   const c = req.headers.get('Cookie') || '';
   for (const p of c.split(';')) {
     const [k, ...r] = p.trim().split('=');
-    if (k === nome) return decodeURIComponent(r.join('='));
+    if (k === nome) {
+      try { return decodeURIComponent(r.join('=')); } catch { return null; }
+    }
   }
   return null;
 }

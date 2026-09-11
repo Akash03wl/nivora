@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +12,8 @@ function mockDB() {
     prepare(sql:string){
       const stmt:any=sqlite.prepare(sql);
       return { bind(...p:unknown[]){ return { first:(c?:string)=>{ const r=stmt.get(...p) as any; if(r===undefined) return null; return c? r[c]: r; }, all:()=>({results:stmt.all(...p)||[]}), run:()=>{ const r=stmt.run(...p); return {meta:{changes:r.changes}}; } }; } };
-    }, exec(sql:string){ sqlite.exec(sql); return {success:true}; }
+    }, batch(statements: any[]) { sqlite.exec('BEGIN'); try { const results = statements.map(s => s.run()); sqlite.exec('COMMIT'); return results; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } },
+    exec(sql: string){ sqlite.exec(sql); return {success:true}; }
   } as unknown as D1Database;
 }
 async function req(app:any, url:string, method:string, body?:any, headers:Record<string,string>={}, env:any={}) {
@@ -33,8 +34,11 @@ async function criaSalaAtivaComQuestoes(cookieAdmin:string) {
 
 describe('Ranking Fase 7', () => {
   beforeEach(()=>{ (global as any).__DB = mockDB(); });
+  afterEach(()=>{ vi.useRealTimers(); });
 
   it('ranking ordena por acertos > pontuacao > tempo', async () => {
+    // B8: o tempo é medido pelo servidor — o teste avança o relógio fake para simular ritmo real
+    vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00.000Z') });
     let r = await req(app,'http://test/api/auth/register','POST',{ nick:'adm', email:'adm@ex.com', senha:'senha12345' });
     const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
     const roomId = await criaSalaAtivaComQuestoes(cA);
@@ -47,35 +51,40 @@ describe('Ranking Fase 7', () => {
       const rr = await req(app,'http://test/api/auth/register','POST',{ nick, email:`${nick}@ex.com`, senha:'senha12345' });
       alunos.push({ nick, cookie: (rr.headers.get('Set-Cookie')||'').split(';')[0] });
     }
-    // ana: 10 acertos rápidos (bonus max)
+    // ana: 10 acertos rápidos (2s por questão → bônus máximo; servidor mede o tempo)
     let ru = alunos[0];
     await req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: ru.cookie });
     for (const q of qs) {
-      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:q.id, alternativa_idx:q.correta_idx, tempo_gasto:3 }, { Cookie: ru.cookie });
+      vi.advanceTimersByTime(2000);
+      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:q.id, alternativa_idx:q.correta_idx }, { Cookie: ru.cookie });
     }
     await req(app,`http://test/api/rooms/${roomId}/finish`,'POST',{}, { Cookie: ru.cookie });
 
-    // bob: 5 acertos lentos (mesmo acertos que carlos mas mais lento, deve ficar atrás)
+    // bob: 5 acertos lentos (20s por questão na primeira metade — mesmo 5 acertos que carlos, porém mais lento e com menos bônus)
     ru = alunos[1];
     await req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: ru.cookie });
     for (let i=0;i<5;i++) {
-      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:qs[i].correta_idx, tempo_gasto:20 }, { Cookie: ru.cookie });
+      vi.advanceTimersByTime(20000);
+      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:qs[i].correta_idx }, { Cookie: ru.cookie });
     }
     for (let i=5;i<10;i++) {
+      vi.advanceTimersByTime(5000);
       const err = (qs[i].correta_idx + 1) % 4;
-      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:err, tempo_gasto:5 }, { Cookie: ru.cookie });
+      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:err }, { Cookie: ru.cookie });
     }
     await req(app,`http://test/api/rooms/${roomId}/finish`,'POST',{}, { Cookie: ru.cookie });
 
-    // carlos: 5 acertos rápidos (mesmo 5 acertos que bob, mas mais rápido e com mais bônus, deve ficar na frente de bob)
+    // carlos: 5 acertos rápidos (2s por questão — deve ficar na frente de bob por pontuação e tempo)
     ru = alunos[2];
     await req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: ru.cookie });
     for (let i=0;i<5;i++) {
-      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:qs[i].correta_idx, tempo_gasto:3 }, { Cookie: ru.cookie });
+      vi.advanceTimersByTime(2000);
+      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:qs[i].correta_idx }, { Cookie: ru.cookie });
     }
     for (let i=5;i<10;i++) {
+      vi.advanceTimersByTime(2000);
       const err = (qs[i].correta_idx + 1) % 4;
-      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:err, tempo_gasto:5 }, { Cookie: ru.cookie });
+      await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:qs[i].id, alternativa_idx:err }, { Cookie: ru.cookie });
     }
     await req(app,`http://test/api/rooms/${roomId}/finish`,'POST',{}, { Cookie: ru.cookie });
 

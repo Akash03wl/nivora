@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +12,8 @@ function mockDB() {
     prepare(sql:string){
       const stmt:any=sqlite.prepare(sql);
       return { bind(...p:unknown[]){ return { first:(c?:string)=>{ const r=stmt.get(...p) as any; if(r===undefined) return null; return c? r[c]: r; }, all:()=>({results:stmt.all(...p)||[]}), run:()=>{ const r=stmt.run(...p); return {meta:{changes:r.changes}}; } }; } };
-    }, exec(sql:string){ sqlite.exec(sql); return {success:true}; }
+    }, batch(statements: any[]) { sqlite.exec('BEGIN'); try { const results = statements.map(s => s.run()); sqlite.exec('COMMIT'); return results; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } },
+    exec(sql: string){ sqlite.exec(sql); return {success:true}; }
   } as unknown as D1Database;
 }
 async function req(app:any, url:string, method:string, body?:any, headers:Record<string,string>={}, env:any={}) {
@@ -23,8 +24,11 @@ async function req(app:any, url:string, method:string, body?:any, headers:Record
 
 describe('Execução Fase 6', () => {
   beforeEach(()=>{ (global as any).__DB = mockDB(); });
+  afterEach(()=>{ vi.useRealTimers(); });
 
   it('fluxo completo: start → answer → finish com proteção', async () => {
+    // B8: o tempo de cada questão é medido no servidor (relógio fake avança entre chamadas)
+    vi.useFakeTimers({ now: new Date('2026-01-01T00:00:00.000Z') });
     // admin cria sala e gera questões
     let r = await req(app,'http://test/api/auth/register','POST',{ nick:'adm', email:'adm@ex.com', senha:'senha12345' });
     const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
@@ -66,8 +70,9 @@ describe('Execução Fase 6', () => {
     r = await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:q1, alternativa_idx:gab, tempo_gasto:2 }, { Cookie: cU });
     expect(r.status).toBe(409);
 
-    // answer com tempo excedido (limite 30, envia 40) → expirada
-    r = await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:q2, alternativa_idx:0, tempo_gasto:40 }, { Cookie: cU });
+    // answer após o tempo limite real: o servidor mede 31s > limite 30s (B8, não confia no cliente)
+    vi.advanceTimersByTime(31000);
+    r = await req(app,`http://test/api/rooms/${roomId}/answer`,'POST',{ question_id:q2, alternativa_idx:0 }, { Cookie: cU });
     expect(r.status).toBe(200);
     ar = await r.json();
     expect(ar.expirada).toBe(true);
@@ -89,6 +94,35 @@ describe('Execução Fase 6', () => {
     // segunda tentativa de start → 409 (1 tentativa)
     r = await req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: cU });
     expect(r.status).toBe(409);
+  });
+
+  it('B12: corrida em /start não gera 500 — só uma tentativa, segunda responde 409/retomada', async () => {
+    // admin cria sala e gera questões
+    let r = await req(app,'http://test/api/auth/register','POST',{ nick:'admb12', email:'admb12@ex.com', senha:'senha12345' });
+    const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];
+    r = await req(app,'http://test/api/rooms','POST',{ nome:'Corrida', assuntos:['Alg'], quantidade:10, tempo_por_questao:30 }, { Cookie: cA });
+    const roomId = (await r.json() as any).room.id;
+    await req(app,`http://test/api/rooms/${roomId}/generate`,'POST',{}, { Cookie: cA });
+    await req(app,`http://test/api/rooms/${roomId}/status`,'POST',{ status:'REVIEW' }, { Cookie: cA });
+    await req(app,`http://test/api/rooms/${roomId}/status`,'POST',{ status:'PUBLISHED' }, { Cookie: cA });
+    await req(app,`http://test/api/rooms/${roomId}/status`,'POST',{ status:'ACTIVE' }, { Cookie: cA });
+    r = await req(app,'http://test/api/auth/register','POST',{ nick:'ub12', email:'ub12@ex.com', senha:'senha12345' });
+    const cU = (r.headers.get('Set-Cookie')||'').split(';')[0];
+    // duas chamadas simultâneas ao start
+    const [a, b] = await Promise.all([
+      req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: cU }),
+      req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: cU })
+    ]);
+    const sts = [a.status, b.status].sort((x,y)=>x-y);
+    expect(sts[0]).toBe(201);              // uma cria a tentativa
+    expect([200, 409]).toContain(sts[1]);  // a outra retoma (200) ou é bloqueada (409) — nunca 500
+    // exatamente uma tentativa no banco
+    const db:any = (global as any).__DB;
+    const cnt:any = await db.prepare('SELECT COUNT(*) as c FROM attempts WHERE user_id = (SELECT id FROM users WHERE nick = ?)').bind('ub12').first();
+    expect(Number(cnt.c)).toBe(1);
+    // terceira chamada (já em andamento) também não duplica: retoma sem 201
+    const c3 = await req(app,`http://test/api/rooms/${roomId}/start`,'POST',{}, { Cookie: cU });
+    expect([200, 409]).toContain(c3.status);
   });
 
   it('start bloqueia se sala não ACTIVE', async () => {

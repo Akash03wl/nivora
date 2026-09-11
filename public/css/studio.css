@@ -714,3 +714,100 @@ footer>a{
 
 }
 
+/* Integrated study, authentication and accessible theme surfaces. */
+:root, html[data-theme="light"] {
+  --font-title: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  --highlight: #244ac2; --highlight-deep: #17379a; --btn-text: #fff;
+  --ink-950: #f5f6f8; --ink-900: #fff; --ink-800: #fff; --ink-700: #edf0f5;
+  --paper: #17243b; --acerto: #287448; --erro: #b42336;
+}
+body.login-visible { padding-left: 0; }
+body:has(#login-screen.visivel) { padding-left: 0; }
+[hidden], .room-card[hidden] { display: none !important; }
+#site { align-items: stretch; }
+.nav-links { margin-left: 0; width: 100%; }
+.nav-controles { margin-top: auto; flex-direction: column; align-items: stretch; }
+.logo-mark { color: #fff; }
+.logo-mark svg { color: #fff; }
+.home-extra { margin-top: 22px; }
+.progresso-preview { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; }
+.pp-barras { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.pp-frase { margin-top: 12px; }
+.btn-primary { color: #fff; }
+#login-screen { padding: 48px 32px; }
+.login-wrap { max-width: 1240px; grid-template-columns: 390px minmax(0, 1fr); gap: 58px; }
+.login-card { border-radius: 24px; padding: 32px; box-shadow: 0 12px 40px #172b5808; }
+.login-marca { justify-content: flex-start; margin-bottom: 28px; }
+#auth-title, .login-sub { text-align: left; }
+#auth-title { font-size: 1.65rem; letter-spacing: -.035em; }
+.login-sub { margin-top: 14px; line-height: 1.7; }
+.login-statement { background: #172b58; color: white; border-radius: 26px; padding: 36px; overflow: hidden; }
+.login-statement .eyebrow { color: #d2ee82; }
+.login-statement h2 { font-size: clamp(2rem, 3.4vw, 3.2rem); letter-spacing: -.035em; line-height: 1.13; margin: 22px 0; }
+.login-statement em { font-style: normal; color: #d2ee82; }
+.login-statement p { color: #cad3e5; max-width: 400px; }
+.login-path { display: flex; align-items: flex-end; gap: 12px; margin: 28px 0 0; }
+.login-path span { padding: 14px; border-radius: 12px; background: #355487; font-size: .85rem; flex: 1; }
+.login-path span:nth-child(2) { background: #4873d5; padding-top: 27px; }
+.login-path span:nth-child(3) { background: #d2ee82; color: #172b36; padding-top: 40px; }
+.login-stats { margin: 0; }
+.tab-btn.ativo { background: #244ac2; color: white; border-radius: 8px; }
+.passos { gap: 20px; }
+.passo-icone, .valor-icone { color: var(--primary); }
+.mockup { background: var(--card); }
+#execucao, #resultado { max-width: 900px; margin-left: auto; margin-right: auto; }
+#exec-cabecalho { border: 0; background: #172b58; color: #fff; padding: 24px; }
+#exec-cabecalho #exec-progresso span { color: #cad3e5 !important; }
+#exec-timer { background: #d2ee82; color: #172b36; padding: 8px 14px; border-radius: 10px; font-variant-numeric: tabular-nums; }
+#exec-timer.urgente { background: #ffe0e0; color: #9d1c30; }
+#exec-card { box-shadow: none; padding: 32px !important; }
+.opcao { border-radius: 12px; background: var(--surface); min-height: 58px; }
+.opcao.sel { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, var(--card)); }
+.opcao-letra { border-radius: 9px; }
+.opcao.sel .opcao-letra { background: var(--primary); color: white; }
+.metrica { border-radius: 16px; padding: 20px; }
+.explicacao { background: color-mix(in srgb, var(--acerto) 8%, var(--card)); border-radius: 12px; }
+.hero { min-height: 340px; padding: 32px; }
+.hero h2 { font-size: clamp(2rem, 3.2vw, 3rem); }
+html[data-theme="dark"] {
+  --bg:#101a2b; --surface:#17243a; --card:#17243a; --card-2:#223149;
+  --border:#35445c; --text:#edf2fc; --muted:#afbdd3; --primary:#9bb9ff;
+  --highlight:#9bb9ff; --highlight-deep:#bed1ff; --paper:#edf2fc;
+  --ink-950:#101a2b; --ink-900:#17243a; --ink-800:#17243a; --ink-700:#223149;
+  --acerto:#83d5a2; --success:#83d5a2; --erro:#ffa7ac; --error:#ffa7ac;
+}
+html[data-theme="dark"] .navbar, html[data-theme="dark"] .search-field, html[data-theme="dark"] .subject-field select, html[data-theme="dark"] .state { background: var(--card); }
+html[data-theme="dark"] .badge { color: var(--muted); background: var(--card-2); }
+html[data-theme="dark"] .btn-ghost { color: var(--text); }
+html[data-theme="dark"] .hero .badge { background: #ffffff0d; color: #d2ee82; }
+html[data-theme="dark"] .hero .btn-primary { color: #172b36; }
+@media (min-width:801px) {
+  .nav-links { position: static; display: flex; background: transparent; box-shadow: none; padding: 0; max-height: none; border: 0; }
+  .btn.btn-menu { display: none; }
+}
+@media (max-width:800px) {
+  .nav-inner { flex-wrap: nowrap; justify-content: space-between; }
+  .btn.btn-menu { display: inline-flex; width: 44px; }
+  .nav-inner .nav-links { display: none; position: absolute; flex-direction: column; align-items: stretch !important; top: 100%; left: 0; right: 0; padding: 16px; margin: 0; background: var(--surface); box-shadow: var(--shadow); max-height: 80dvh; overflow: auto; }
+  .nav-inner .nav-links.aberto { display: flex; }
+  .nav-inner .nav-links>a { padding: 12px; font-size: 1rem; }
+  .nav-controles { flex-direction: row; flex-wrap: wrap; }
+  #auth-area { max-width: none; flex-direction: row; flex-wrap: wrap; }
+  #auth-area .auth-info { display: block; width: 100%; }
+  #login-screen { padding: 24px 18px; }
+  .login-wrap { grid-template-columns: 1fr; gap: 28px; }
+  .login-col-forma { position: static; }
+  .login-card { max-width: 560px; }
+  .pp-barras { grid-template-columns: 1fr; }
+  section { scroll-margin-top: 90px; }
+}
+@media (max-width:580px) {
+  #exec-card { padding: 20px !important; }
+  .login-statement { padding: 26px; }
+  .login-path { gap: 6px; }
+  .login-path span { padding: 12px 8px; font-size: .75rem; }
+  .exec-acoes { background: var(--card); }
+}
+html[data-theme] .btn-primary, html[data-theme] .auth-tabs .tab-btn.ativo { background: #244ac2; color: #fff; }
+html[data-theme] .hero .btn-primary { background: #d2ee82; color: #172b36; }
+.hero h1 { font: 800 clamp(2rem, 3.2vw, 3rem)/1.08 var(--font-title); letter-spacing: -.035em; margin: 20px 0; }

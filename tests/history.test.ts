@@ -12,7 +12,8 @@ function mockDB() {
     prepare(sql:string){
       const stmt:any=sqlite.prepare(sql);
       return { bind(...p:unknown[]){ return { first:(c?:string)=>{ const r=stmt.get(...p) as any; if(r===undefined) return null; return c? r[c]: r; }, all:()=>({results:stmt.all(...p)||[]}), run:()=>{ const r=stmt.run(...p); return {meta:{changes:r.changes}}; } }; } };
-    }, exec(sql:string){ sqlite.exec(sql); return {success:true}; }
+    }, batch(statements: any[]) { sqlite.exec('BEGIN'); try { const results = statements.map(s => s.run()); sqlite.exec('COMMIT'); return results; } catch (e) { sqlite.exec('ROLLBACK'); throw e; } },
+    exec(sql: string){ sqlite.exec(sql); return {success:true}; }
   } as unknown as D1Database;
 }
 async function req(app:any, url:string, method:string, body?:any, headers:Record<string,string>={}, env:any={}) {

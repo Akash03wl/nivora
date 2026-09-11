@@ -3,6 +3,8 @@
  * AIService com providers trocáveis. Nunca salvar questão incompleta como válida.
  */
 
+import { LIMITES } from './config.js';
+
 export type GerarParams = {
   materia: string;
   assuntos: string[];
@@ -89,6 +91,44 @@ export function validarLote(questoes: any[]): ValidacaoResultado {
   return { ok: true, questoes };
 }
 
+// B9/B13: repara um lote substituindo exatamente o índice inválido (não sempre o 0)
+// e resolve duplicidades regenerando a ocorrência repetida. Orçamento = MAX_TENTATIVAS_REGENERACAO.
+export async function repararLote(
+  questoes: any[],
+  regenerar: () => Promise<any | null>,
+  maxTentativas = LIMITES.MAX_TENTATIVAS_REGENERACAO
+): Promise<{ ok: boolean; questoes: any[]; erro?: string }> {
+  let qs = Array.isArray(questoes) ? [...questoes] : [];
+  const normalizar = (s: unknown) => String(s || '').toLowerCase().trim();
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    const v = validarLote(qs);
+    if (v.ok) return { ok: true, questoes: qs };
+    // 1) conteúdo individual inválido → regenera exatamente esse índice (B9)
+    let idx = -1;
+    for (let i = 0; i < qs.length; i++) {
+      const r = validarQuestao(qs[i], i);
+      if (!r.ok) { idx = i; break; }
+    }
+    // 2) duplicidade de enunciado entre questões → regenera a última ocorrência repetida
+    if (idx === -1) {
+      const visto = new Map<string, number>();
+      for (let i = 0; i < qs.length; i++) {
+        const ch = normalizar(qs[i]?.enunciado);
+        if (visto.has(ch)) idx = i;
+        else visto.set(ch, i);
+      }
+    }
+    if (idx === -1) return { ok: false, questoes: qs, erro: v.erro || 'Lote inválido.' };
+    const reg = await regenerar();
+    if (!reg) break;
+    qs[idx] = reg;
+    tentativas++;
+  }
+  const fin = validarLote(qs);
+  return fin.ok ? { ok: true, questoes: qs } : { ok: false, questoes: qs, erro: fin.erro };
+}
+
 // Mock local garantido (fallback) — B2: correta_idx aleatório, não sempre 2
 export function mockLocal(params: GerarParams) {
   return {
@@ -114,54 +154,65 @@ export function mockLocal(params: GerarParams) {
 
 export class AIService {
   constructor(private env: any) {}
-  // generateQuestions()
+  // generateQuestions() — B14: timeout 30s realmente aplicado
   async generateQuestions(params: GerarParams): Promise<{ questoes: any[]; provedor: string; prompt: string; raw: string }> {
     const prompt = montarPrompt(params);
     const quantidade = params.quantidade;
-    // Helper com timeout 30s
-    const comTimeout = async (p: Promise<string>, ms = 30000): Promise<string> => {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), ms);
-      try { return await p; } finally { clearTimeout(t); }
+    // B14: timeout de 30s realmente aplicado (e sempre limpo, sem timer órfão)
+    const comTimeout = async <T>(p: Promise<T>, ms = 30000, motivo = 'Timeout IA 30s'): Promise<T> => {
+      let t: any;
+      try {
+        const travado = new Promise<never>((_, rej) => { t = setTimeout(() => rej(new Error(motivo)), ms); });
+        return await Promise.race([p, travado]);
+      } finally { if (t) clearTimeout(t); }
     };
-    // Workers AI
+    // Workers AI (binding não aceita AbortSignal → Promise.race com timeout)
     if (this.env.AI) {
       try {
         const modelo = this.env.AI_MODEL || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-        const r: any = await this.env.AI.run(modelo, {
+        const r: any = await comTimeout(this.env.AI.run(modelo, {
           messages: [{ role: 'system', content: 'Gere APENAS JSON válido, sem markdown.' }, { role: 'user', content: prompt }]
-        });
+        }));
         const txt = typeof r === 'string' ? r : r.response || '';
         const dados = extrairJSON(txt);
         if (dados?.questoes?.length) {
           const valid = validarLote(dados.questoes.slice(0, quantidade));
           if (valid.ok) return { questoes: dados.questoes.slice(0, quantidade), provedor: 'workers-ai', prompt, raw: txt };
         }
-      } catch (e) { console.error('[ai] workers-ai falhou', (e as any)?.message || e); }
+      } catch (e) { console.error('[ai] workers-ai indisponível'); }
     }
-    // OpenRouter / Gemini
+    // OpenRouter / Gemini (AbortSignal com timeout limpo em finally)
     if (this.env.AI_API_KEY) {
       try {
         const url = (this.env.AI_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/$/, '') + '/chat/completions';
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.env.AI_API_KEY}` },
-          body: JSON.stringify({
-            model: this.env.AI_MODEL || 'google/gemini-2.0-flash-001',
-            messages: [{ role: 'system', content: 'Gere APENAS JSON válido.' }, { role: 'user', content: prompt }],
-            temperature: 0.7
-          })
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const j: any = await resp.json();
-        const txt = j.choices?.[0]?.message?.content || '';
-        const dados = extrairJSON(txt);
-        if (dados?.questoes?.length) {
-          const valid = validarLote(dados.questoes.slice(0, quantidade));
-          if (valid.ok) return { questoes: dados.questoes.slice(0, quantidade), provedor: 'openrouter', prompt, raw: txt };
+        const ctrl = new AbortController();
+        const abortTimer = setTimeout(() => ctrl.abort(), 30000);
+        try {
+          const resp = await comTimeout(fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.env.AI_API_KEY}` },
+            signal: ctrl.signal as any,
+            body: JSON.stringify({
+              model: this.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash-001',
+              messages: [{ role: 'system', content: 'Gere APENAS JSON válido.' }, { role: 'user', content: prompt }],
+              temperature: 0.7
+            })
+          }), 30000, 'Timeout OpenRouter 30s');
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          const j: any = await resp.json();
+          const txt = j.choices?.[0]?.message?.content || '';
+          const dados = extrairJSON(txt);
+          if (dados?.questoes?.length) {
+            const valid = validarLote(dados.questoes.slice(0, quantidade));
+            if (valid.ok) return { questoes: dados.questoes.slice(0, quantidade), provedor: 'openrouter', prompt, raw: txt };
+          }
+        } finally {
+          clearTimeout(abortTimer);
+          ctrl.abort();
         }
-      } catch (e) { console.error('[ai] openrouter falhou', (e as any)?.message || e); }
+      } catch (e) { console.error('[ai] openrouter indisponível'); }
     }
+    if (this.env.ENVIRONMENT === 'production') throw new Error('IA indisponível. Questões de demonstração não são geradas em produção.');
     const m = mockLocal(params);
     return { questoes: m.questoes, provedor: 'mock-local', prompt, raw: JSON.stringify(m) };
   }

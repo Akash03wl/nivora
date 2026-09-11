@@ -1,5 +1,7 @@
 # NIVORA — Guia de Deploy (Fase 12)
 
+> **Atualização 2026-09-10:** este documento descreve a implantação histórica. Os checklists abaixo não foram revalidados no remoto. Para esta atualização, seguir [PUBLICACAO-SEGURA.md](PUBLICACAO-SEGURA.md), especialmente cadastro administrativo, backup e ordem de migração. ADMIN_EMAIL não concede mais administração no cadastro público de produção.
+
 > Produção: **https://nivora.walacefercundes132.workers.dev**  
 > Repo: **https://github.com/Akash03wl/nivora**  
 > Stack: Workers + D1 + Assets + Hono
@@ -29,16 +31,19 @@ Atual: `a32b91a4-a142-45ca-ab5d-0ad8249e87bf` (já criado)
 **Locais** (`.dev.vars`, não commitado):
 ```ini
 ENVIRONMENT=development
-ADMIN_EMAIL=seu@email.com
 # AI_API_KEY=sk-or-...
 # AI_BASE_URL=https://openrouter.ai/api/v1
+# RESEND_API_KEY=re_...          (e-mail de recuperação de senha)
+# RESEND_FROM=Nivora <nao-responder@seu-dominio.com>
 ```
 
-**Produção** (Secrets):
+**Produção** (Secrets — nunca em `wrangler.jsonc`, que vai para o Git):
 ```bash
-npx wrangler secret put ADMIN_EMAIL
 npx wrangler secret put AI_API_KEY
 npx wrangler secret put AI_BASE_URL
+npx wrangler secret put OPENROUTER_MODEL
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put RESEND_FROM
 # Vars públicas já em wrangler.jsonc: APP_NAME, SITE_URL, AI_MODEL, SCORING_*
 ```
 
@@ -55,14 +60,14 @@ npx wrangler d1 execute nivora-db --remote --command "SELECT name FROM d1_migrat
 npx wrangler d1 execute nivora-db --remote --command "SELECT slug FROM subjects limit 3;"
 ```
 
-Migrations: `0001_initial` (users, rooms, questions...), `0002_rate_limit`, `0003_password_reset`, `0004_indices_scores`, `0005_seeds`
+Migrations: `0001_initial` (users, rooms, questions...), `0002_rate_limit`, `0003_password_reset`, `0004_indices_scores`, `0005_seeds`, `0006_faseB` (coluna `attempts.ultima_resposta_em` p/ tempo validado no servidor)
 
 ---
 
 ## 5. Testes locais
 
 ```bash
-npm test          # 12 arquivos, 46 testes
+npm test          # 12 arquivos, 54 testes
 npx tsc --noEmit
 ```
 
@@ -114,10 +119,11 @@ Repo já pushado (9a27226 → 0a49048). README com badges e fases.
 ## 9. Checklist Produção
 
 - [x] D1 criado (`nivora-db`)
-- [x] Migrations aplicadas (5/5 local e remote)
-- [x] Secrets `ADMIN_EMAIL` (opcional, 1º usuário vira ADMIN de qualquer forma)
+- [x] Migrations aplicadas (6/6 local e remote)
+- [ ] Confirmar manualmente um `ADMIN` legítimo no D1 remoto; cadastro público de produção cria somente `USER`
+- [x] Secrets `RESEND_API_KEY`/`RESEND_FROM` para recuperação de senha por e-mail
 - [x] `ENVIRONMENT=production` → cookies `Secure`
-- [x] `npm test` 46 pass, `tsc` 0 erros
+- [x] `npm test` 54 pass, `tsc` 0 erros
 - [x] Deploy `https://nivora.walacefercundes132.workers.dev` com `db:ok`
 - [x] GitHub `Akash03wl/nivora` público
 

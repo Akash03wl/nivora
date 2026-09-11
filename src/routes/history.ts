@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { usuarioDaSessao } from '../lib/auth.js';
 import { primeira, todas } from '../lib/db.js';
+import { calcularPosicao } from '../lib/scoring.js';
 
 type Env = { DB: D1Database };
 
@@ -20,19 +21,14 @@ history.get('/history', async (c) => {
   const out = await Promise.all(lista.map(async (row: any) => {
     const total = Number(row.total) || (row.acertos + row.erros);
     const porcentagem = total ? Math.round(row.acertos / total * 100) : 0;
-    // posição na sala
+    // B17: posição única
     const rank = await todas(c.env.DB, 'SELECT acertos, pontuacao, tempo_total FROM attempts WHERE room_id = ? AND status = ? ORDER BY acertos DESC, pontuacao DESC, tempo_total ASC', row.room_id, 'finalizada');
-    let acima = 0;
-    for (const r of rank as any[]) {
-      if (r.acertos > row.acertos) acima++;
-      else if (r.acertos === row.acertos && r.pontuacao > row.pontuacao) acima++;
-      else if (r.acertos === row.acertos && r.pontuacao === row.pontuacao && r.tempo_total < row.tempo_total) acima++;
-    }
+    const pos = calcularPosicao(rank as any[], { acertos: row.acertos, pontuacao: row.pontuacao, tempo_total: row.tempo_total });
     return {
       attempt_id: row.id, room_id: row.room_id, room_nome: row.room_nome, materia_id: row.materia_id,
       acertos: row.acertos, total, porcentagem, pontuacao: row.pontuacao, tempo_total: row.tempo_total,
       iniciado_em: row.iniciado_em, finalizado_em: row.finalizado_em,
-      posicao: acima + 1, total_participantes: (rank as any[]).length
+      posicao: pos, total_participantes: (rank as any[]).length
     };
   }));
   return c.json({ history: out });
