@@ -1,0 +1,35 @@
+/* Reforço ENEM: aprendizagem e revisão em primeiro plano. */
+[hidden]{display:none!important}
+.legacy-preview,.growth-art{display:none!important}
+.hero{grid-template-columns:1fr;min-height:auto;padding:36px!important;margin-bottom:32px}
+.hero h1{max-width:850px;font-size:clamp(2rem,3.8vw,3.7rem)}
+.hero-description{max-width:650px}
+#study-panel{margin:32px 0 48px}
+.study-intro{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.study-intro h2{margin:8px 0;font-size:clamp(1.5rem,2.4vw,2rem)}
+.study-intro p,.review-notebook>p{color:var(--muted)}
+.study-count{padding:10px 16px;background:var(--card);border:1px solid var(--border);border-radius:30px;font-size:.85rem}
+.study-columns{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+.next-study,.study-method{padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--card)}
+.next-study{border-top:4px solid #81a86a}
+.next-study h3{font-size:1.5rem;margin:14px 0}
+.next-study p{color:var(--muted);margin-bottom:24px}
+.study-method ol{padding-left:25px;margin:16px 0}
+.study-method li{padding:6px 0}
+.study-method li span{display:block;color:var(--muted);font-size:.88rem}
+.study-method>p{font-size:.8rem;color:var(--muted)}
+.subject-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0 40px}
+.subject-path{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:20px;text-align:left;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--text);cursor:pointer}
+.subject-path:hover{border-color:var(--primary)}
+.subject-path>span:first-child{font-weight:800}.subject-path small{color:var(--muted)}
+.review-notebook{padding:28px;border:1px solid var(--border);border-radius:22px;background:var(--card)}
+.review-notebook label{display:block;margin:20px 0}.review-notebook select{max-width:300px;display:block;margin-top:6px}
+.review-item{border-top:1px solid var(--border);padding:24px 0}.review-item h3{font-size:1rem;line-height:1.6;margin:12px 0}.review-item small{color:var(--muted)}
+.review-item ol{padding-left:26px}.review-item li{padding:5px 0}.review-item details{background:var(--card-2);padding:16px;border-radius:12px;margin-top:16px}.review-item summary{cursor:pointer;font-weight:700}.review-item details p{margin-top:14px}
+.study-empty{padding:20px;background:var(--card-2);border-radius:12px;margin:18px 0;color:var(--muted)}
+#study-dialog{max-width:min(580px,calc(100vw - 32px));padding:28px;border:1px solid var(--border);border-radius:20px;background:var(--card);color:var(--text)}
+#study-dialog::backdrop{background:#101e36aa}#study-dialog h2{margin-bottom:18px}.dialog-actions{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.room-card [data-acao="ranking"]{display:none}
+.login-statement h2{font-size:clamp(2rem,3.8vw,3.8rem)}
+@media(max-width:850px){.study-columns{grid-template-columns:1fr}.subject-paths{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{padding:24px!important}}
+@media(max-width:480px){.next-study,.study-method,.review-notebook{padding:20px}.subject-path{padding:14px}.study-intro{gap:10px}}

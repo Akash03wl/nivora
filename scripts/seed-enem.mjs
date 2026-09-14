@@ -2,11 +2,11 @@ import { writeFileSync } from 'node:fs';
 import { salasEnem } from '../content/enem-2026.mjs';
 
 const str = value => `'${String(value).replaceAll("'", "''")}'`;
-export function gerarSQL() {
+export function gerarSQL(salas = salasEnem, prefix = 'nivora_enem_v1_') {
   const lines = ['-- Gerado por scripts/seed-enem.mjs. Apenas inclusões; não altera tentativas ou conteúdo existente.'];
   const nomes = { portugues:'Português', matematica:'Matemática', biologia:'Biologia', fisica:'Física', quimica:'Química', humanas:'Ciências Humanas' };
-  for (const sala of salasEnem) {
-    const id = `nivora_enem_v1_${sala.id}`;
+  for (const sala of salas) {
+    const id = `${prefix}${sala.id}`;
     if (sala.questoes.length !== 5) throw new Error('Quantidade inesperada');
     lines.push(`INSERT INTO subjects (id,nome,slug) VALUES (${str(sala.materia)},${str(nomes[sala.materia])},${str(sala.materia)}) ON CONFLICT(id) DO NOTHING;`);
     lines.push(`INSERT INTO rooms (id,nome,descricao,materia_id,assuntos,quantidade,dificuldade,tempo_por_questao,status) VALUES (${str(id)},${str('Simulado de '+sala.nome)},${str('Preparação ENEM · 5 questões autorais de fundamentos, com explicações. Sem cronômetro. Não é prova oficial nem simulação da nota TRI.')},${str(sala.materia)},${str(JSON.stringify(sala.questoes.map(q=>q.assunto)))},5,'medio',0,'ACTIVE') ON CONFLICT(id) DO NOTHING;`);

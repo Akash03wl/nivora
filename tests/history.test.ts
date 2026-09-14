@@ -34,6 +34,27 @@ async function criaAtiva(cookie:string) {
 describe('Histórico Fase 8', () => {
   beforeEach(()=>{ (global as any).__DB = mockDB(); });
 
+  it('painel de reforço isola usuários e só libera revisão depois da conclusão', async () => {
+    const db=(global as any).__DB;
+    db.exec(fs.readFileSync('content/enem-2026.sql','utf8'));
+    expect((await req(app,'http://test/api/me/study','GET')).status).toBe(401);
+    const a=await req(app,'http://test/api/auth/register','POST',{nick:'study-a',email:'study-a@example.test',senha:'TesteEstudo2026!'});
+    const cookie=(a.headers.get('Set-Cookie')||'').split(';')[0];
+    const base='http://test/api/rooms/nivora_enem_v1_matematica';
+    await req(app,base+'/start','POST',{}, {Cookie:cookie});
+    let panel:any=await (await req(app,'http://test/api/me/study','GET',undefined,{Cookie:cookie})).json();
+    expect(panel.ongoing).toHaveLength(1);expect(panel.review).toHaveLength(0);
+    await req(app,base+'/finish','POST',{}, {Cookie:cookie});
+    panel=await (await req(app,'http://test/api/me/study','GET',undefined,{Cookie:cookie})).json();
+    expect(panel.ongoing).toHaveLength(0);expect(panel.review).toHaveLength(5);
+    expect(panel.review[0].alternativas).toHaveLength(5);
+    expect(panel.review[0].explicacao.length).toBeGreaterThan(10);
+    const b=await req(app,'http://test/api/auth/register','POST',{nick:'study-b',email:'study-b@example.test',senha:'TesteEstudo2026!'});
+    const other=(b.headers.get('Set-Cookie')||'').split(';')[0];
+    const isolated:any=await (await req(app,'http://test/api/me/study','GET',undefined,{Cookie:other})).json();
+    expect(isolated.review).toEqual([]);expect(isolated.completed).toEqual([]);
+  });
+
   it('history e stats refletem tentativas e por assunto/materia', async () => {
     let r = await req(app,'http://test/api/auth/register','POST',{ nick:'adm', email:'adm@ex.com', senha:'senha12345' });
     const cA = (r.headers.get('Set-Cookie')||'').split(';')[0];

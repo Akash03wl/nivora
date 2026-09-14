@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Nivora — Aprenda. Supere. Evolua.</title>
-  <meta name="description" content="Nivora — Plataforma de estudos e simulados com foco em conhecimento, desempenho e evolução." />
+  <title>Nivora — Seu reforço para o ENEM</title>
+  <meta name="description" content="Prepare-se para o ENEM com simulados por matéria, orientação de estudo, revisão dos erros e acompanhamento do seu progresso." />
   <meta name="theme-color" content="#181A17" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;600;700;800&display=swap">
-  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/studio.css" />
+  <link rel="stylesheet" href="/css/style.css" /><link rel="stylesheet" href="/css/studio.css" /><link rel="stylesheet" href="/css/enem.css" />
 </head>
 <body>
   <!-- Tela de carregamento: aparece em toda visita/recarregamento, por ~3s, antes de qualquer outra coisa -->
@@ -40,7 +40,7 @@
             <strong class="login-nome">NIVORA</strong>
           </div>
           <h1 id="auth-title">Entre para começar a estudar</h1>
-          <p class="login-sub">Simulados com correção explicada, progresso por assunto e sua turma junto, uma questão de cada vez.</p>
+          <p class="login-sub">Seu espaço de reforço para o ENEM: prepare, pratique e transforme dúvidas em aprendizado.</p>
           <div class="auth-tabs" role="tablist">
             <button class="tab-btn ativo" id="tab-login" role="tab" aria-selected="true">Entrar</button>
             <button class="tab-btn" id="tab-register" role="tab" aria-selected="false">Criar conta</button>
@@ -58,7 +58,7 @@
 
       <!-- Coluna do conteúdo rico: explica o produto para quem ainda não tem conta -->
       <div class="login-col login-col-conteudo">
-        <div class="login-statement"><span class="eyebrow">MENOS DECORAR. MAIS ENTENDER.</span><h2>Seu próximo nível<br>começa com uma<br><em>boa pergunta.</em></h2><p>Transforme dúvidas em conhecimento. Pratique, entenda suas respostas e encontre seu próximo passo.</p><div class="login-path" aria-hidden="true"><span>01<br>Curiosidade</span><span>02<br>Prática</span><span>03<br>Evolução ↗</span></div></div>
+        <div class="login-statement"><span class="eyebrow">SEU REFORÇO PARA O ENEM</span><h2>Não precisa<br>aprender tudo<br><em>de uma vez.</em></h2><p>Encontre por onde começar, pratique uma matéria e volte às dúvidas com explicações. Um passo possível, todos os dias.</p><div class="login-path" aria-hidden="true"><span>01<br>Preparar</span><span>02<br>Praticar</span><span>03<br>Revisar ↗</span></div></div>
         <p id="login-stats" class="login-stats" aria-live="polite"></p>
 
         <section class="login-secao" aria-labelledby="como-funciona-title">
@@ -102,22 +102,7 @@
               </div>
             </figure>
 
-            <figure class="mockup" aria-hidden="true">
-              <figcaption>Prévia · Desempenho da turma</figcaption>
-              <div class="placar">
-                <div class="placar-cab" aria-hidden="true">
-                  <span class="placar-pos">#</span>
-                  <span class="placar-nome">Aluno</span>
-                  <span class="placar-col-acertos">Acertos</span>
-                  <span class="placar-col-pontos">Pontos</span>
-                  <span class="placar-col-tempo">Tempo</span>
-                </div>
-                <div class="placar-linha top3"><span class="placar-pos">1º</span><span class="placar-nome">Ana</span><span class="placar-col-acertos placar-num">18/20</span><span class="placar-col-pontos placar-num">1840</span><span class="placar-col-tempo placar-num">04:12</span></div>
-                <div class="placar-linha top3"><span class="placar-pos">2º</span><span class="placar-nome">Bruno</span><span class="placar-col-acertos placar-num">17/20</span><span class="placar-col-pontos placar-num">1790</span><span class="placar-col-tempo placar-num">05:03</span></div>
-                <div class="placar-linha top3"><span class="placar-pos">3º</span><span class="placar-nome">Carlos</span><span class="placar-col-acertos placar-num">16/20</span><span class="placar-col-pontos placar-num">1700</span><span class="placar-col-tempo placar-num">03:58</span></div>
-                <div class="placar-linha eu"><span class="placar-pos">4º</span><span class="placar-nome">Você</span><span class="placar-col-acertos placar-num">15/20</span><span class="placar-col-pontos placar-num">1610</span><span class="placar-col-tempo placar-num">06:20</span></div>
-              </div>
-            </figure>
+            <article class="mockup"><h3>Seu ciclo de revisão</h3><p>Identifique o conceito que faltou, leia a resolução e tente explicá-la sem consultar. Depois, pratique outra questão da mesma matéria.</p><p>O caderno reúne as dúvidas dos simulados que você já concluiu.</p></article>
           </div>
         </section>
 
@@ -141,8 +126,9 @@
           NIVORA
         </a>
         <nav id="nav-links" class="nav-links" aria-label="Navegação principal">
-          <a href="#salas" id="nav-salas">Salas</a>
-          <a href="#ranking" id="nav-ranking">Ranking</a>
+          <a href="#salas" id="nav-salas">Simulados ENEM</a>
+          <a href="#study-panel" id="nav-study">Meu estudo</a>
+          <a href="#ranking" id="nav-ranking" hidden>Ranking</a>
           <a href="#historico" id="nav-historico" style="display:none">Meu progresso</a>
           <a href="#admin" id="nav-admin" style="display:none">Admin</a>
           <span class="nav-divisor" aria-hidden="true"></span>
@@ -160,18 +146,19 @@
     <main class="container" id="conteudo">
       <section class="hero" aria-labelledby="hero-title">
       <div>
-        <span class="badge">MENOS DECORAR. MAIS ENTENDER.</span>
-        <h1 id="hero-title">Seu próximo nível<br>começa com uma<br><em>boa pergunta.</em></h1>
+        <span class="badge">NIVORA · REFORÇO PARA O ENEM</span>
+        <h1 id="hero-title">Um passo possível.<br>Uma dúvida a menos.<br><em>Você mais preparado.</em></h1>
         <p class="hero-description">Seu ENEM começa na prática. Escolha uma matéria, resolva questões e entenda cada resposta para avançar nos estudos.</p>
         <div style="display:flex; gap:12px; flex-wrap:wrap">
-          <button class="btn btn-primary" id="btn-comecar">Encontrar meu próximo desafio ↗</button>
+          <button class="btn btn-primary" id="btn-comecar">Explorar simulados ↗</button>
           <a class="btn btn-ghost" href="#historico" id="hero-progresso">Ver meu progresso</a>
         </div>
         <p class="hero-footnote">Uma questão de cada vez. Cada descoberta conta.</p>
       </div>
       <div class="growth-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="art-spark">✳</span><div class="growth-step step-one">01<span>Curiosidade</span></div><div class="growth-step step-two">02<span>Prática</span></div><div class="growth-step step-three">03<span>Evolução ↗</span></div><span class="art-caption">CONHECIMENTO EM MOVIMENTO</span></div>
     </section>
-<div class="home-extra"><div class="progresso-preview" id="progresso-preview" aria-live="polite">
+<section class="home-extra" id="study-panel" aria-label="Meu estudo" aria-live="polite"></section>
+<div class="home-extra legacy-preview"><div class="progresso-preview" id="progresso-preview" aria-live="polite">
           <strong class="pp-titulo">Seu progresso</strong>
           <p class="pp-sub">Acompanhe sua evolução por matéria e revise o que ainda falta.</p>
           <div class="pp-barras" id="pp-barras">
@@ -186,7 +173,7 @@
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px">
           <div>
             <span class="eyebrow">ESCOLHA UMA MATÉRIA. COMECE A ESTUDAR.</span><h2 id="salas-title">Simulados para o ENEM</h2>
-            <p class="muted">Treinos autorais de fundamentos com 5 questões e explicações, sem cronômetro. Escolha uma sala abaixo — não é necessário código.</p>
+            <p class="muted">Comece pelos fundamentos ou avance para aplicação. Cada treino tem 5 questões autorais com resolução. São práticas por matéria, não provas completas de 180 questões.</p>
             <p style="color:var(--muted)">Simulados publicados e ativos para você praticar agora.</p>
           </div>
           <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
@@ -225,7 +212,7 @@
       <section id="resultado" aria-label="Resultado do simulado" style="display:none; margin-top:28px">
         <div id="res-resumo" style="margin-bottom:18px"></div>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px">
-          <button class="btn btn-primary" id="res-ranking">Ver ranking da sala</button>
+          <button class="btn btn-primary" id="res-ranking" hidden>Ver ranking da sala</button>
           <button class="btn btn-ghost" id="res-voltar">← Voltar para salas</button>
         </div>
         <h3 style="font-family:var(--font-title); margin-bottom:8px">Revisão por questão</h3>
@@ -308,7 +295,7 @@
       <span>Aprenda. Supere. Evolua.</span>
       <div class="rodape-links">
         <a href="#salas" id="rodape-salas">Salas</a>
-        <a href="#ranking" id="rodape-ranking">Ranking</a>
+        <a href="https://www.gov.br/inep/pt-br/areas-de-atuacao/avaliacao-e-exames-educacionais/enem/provas-e-gabaritos" target="_blank" rel="noopener">Provas oficiais do Inep ↗</a><a href="#ranking" id="rodape-ranking" hidden>Ranking</a>
 
       </div>
       <span id="footer-stats" aria-live="polite">Carregando...</span>
@@ -364,6 +351,7 @@
     </div>
   </dialog>
 
+  <dialog id="study-dialog" aria-labelledby="study-dialog-title"><h2 id="study-dialog-title">Prepare seu estudo</h2><p></p><div class="study-empty">Separe papel e caneta. Tente resolver por conta própria; as explicações ficam disponíveis ao concluir. Você pode sair e retomar esta tentativa depois.</div><div class="dialog-actions"><button class="btn btn-ghost" data-study-close>Voltar</button><button class="btn btn-primary" data-study-go>Começar prática</button></div></dialog>
   <script src="/js/app.js" type="module"></script>
 </body>
 </html>

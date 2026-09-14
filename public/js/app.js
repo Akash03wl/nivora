@@ -3,6 +3,7 @@
 // Histórico (M4), Revisão admin (M5), Quantidade (M8), Tema (M9), Perfil (M10), Recuperar senha (Fase C).
 // Tela inicial rica: módulos pequenos e puros (js/icones.js, js/faq.js).
 import { ICONES } from './icones.js';
+import { initStudy } from './study.js';
 import { PERGUNTAS_FAQ, proximaFaqAberta, formatarContagem } from './faq.js';
 
 function escapeHTML(str) {
@@ -43,6 +44,7 @@ let revisao = null;          // { roomId, roomNome, questoes } painel admin
 let temaAtual = null;
 const nomesMaterias = { geral: 'Conhecimentos gerais', matematica: 'Matemática', portugues: 'Português', historia: 'História', geografia: 'Geografia', ciencias: 'Ciências', biologia: 'Biologia', fisica: 'Física', quimica: 'Química', humanas: 'Ciências Humanas' };
 const normalizarBusca = (texto) => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
+const study = initStudy({api,escapeHTML,start:tryEntrar,result:carregarResultado,home:mostrarHome});
 function filtrarSalas() {
   const busca = normalizarBusca($('room-search').value);
   const materia = $('room-subject').value;
@@ -53,7 +55,7 @@ function filtrarSalas() {
     card.hidden = !mostrar;
     if (mostrar) visiveis++;
   });
-  $('salas-status').textContent = `${visiveis} ${visiveis === 1 ? 'sala' : 'salas'}`;
+  $('salas-status').textContent = `${visiveis} ${visiveis === 1 ? 'simulado' : 'simulados'}`;
   $('salas-empty').style.display = visiveis ? 'none' : 'block';
   $('salas-empty').textContent = salasCache.length ? 'Nenhuma sala com esses filtros. Tente outro assunto ou selecione todas as matérias.' : 'Seu próximo desafio está a caminho. Ainda não há salas disponíveis.';
 }
@@ -61,6 +63,7 @@ $('room-search').addEventListener('input', filtrarSalas);
 $('room-subject').addEventListener('change', filtrarSalas);
 $('rooms-retry').addEventListener('click', carregarSalas);
 $('hero-progresso')?.addEventListener('click', e => { e.preventDefault(); abrirHistorico(); });
+$('nav-study')?.addEventListener('click', e => { e.preventDefault(); mostrarHome('study-panel'); });
 
 // ---------------------------------------------------------------- Hero: prévia de progresso (plataforma de estudo, não quiz)
 async function renderProgressoPreview() {
@@ -111,6 +114,7 @@ const secAdmin = $('admin');
 const secViews = ['execucao', 'resultado', 'ranking', 'historico'].map((id) => $(id));
 
 function mostrarHome(rolarPara = null) {
+  if (usuario) study.refresh(salasCache);
   document.querySelectorAll('.home-extra').forEach(el => { el.hidden = false; });
   document.body.classList.remove('em-prova');
   secHero.style.display = '';
@@ -153,13 +157,13 @@ $('btn-tema')?.addEventListener('click', () => {
 // ---------------------------------------------------------------- Tela de entrada rica (dentro do login obrigatório)
 // Texto pronto do PROMPT "TELA INICIAL MAIS RICA" — sem placeholder.
 const PASSOS = [
-  { icone: 'entrar', titulo: 'Entre em uma sala', texto: 'Veja as salas abertas e o assunto de cada uma. Escolha o simulado que combina com a prova que você tem pela frente.' },
+  { icone: 'entrar', titulo: 'Escolha seu foco', texto: 'Comece por uma matéria ou retome o estudo sugerido no seu painel.' },
   { icone: 'ritmo', titulo: 'Responda no seu ritmo', texto: 'As questões foram geradas e revisadas especialmente pra aquele assunto. Você responde quando quiser, sem ninguém esperando por você.' },
   { icone: 'entender', titulo: 'Entenda cada resposta', texto: 'Errou uma questão? A explicação aparece ao finalizar o simulado — o objetivo é entender o motivo, não só saber que errou.' },
-  { icone: 'evolucao', titulo: 'Acompanhe sua evolução', texto: 'Veja seu progresso por assunto, descubra onde ainda precisa revisar e compare seu desempenho com o da turma.' }
+  { icone: 'evolucao', titulo: 'Acompanhe sua evolução', texto: 'Veja seu progresso por assunto, descubra onde ainda precisa revisar e encontre o próximo assunto para reforçar.' }
 ];
 const VALORES = [
-  { icone: 'revisadas', titulo: 'Questões revisadas, não só geradas', texto: 'A IA cria as perguntas, mas elas passam por uma checagem antes de a sala abrir — pra você não perder tempo estudando por um gabarito errado.' },
+  { icone: 'revisadas', titulo: 'Questões revisadas, não só geradas', texto: 'Os treinos ENEM são autorais, com alternativas e explicações conferidas. A origem é indicada no simulado.' },
   { icone: 'tempo', titulo: 'Cada um no seu tempo', texto: 'Sem sala de aula sincronizada, sem esperar todo mundo terminar. Você entra quando quiser e vê seu resultado assim que termina.' },
   { icone: 'explicado', titulo: 'Erro explicado, não só marcado', texto: 'Toda resposta errada vem com uma explicação — é aí que o estudo realmente acontece.' },
   { icone: 'progresso', titulo: 'Progresso por assunto', texto: 'Não é só uma nota final. Você vê exatamente onde está bem e onde ainda precisa revisar.' }
@@ -299,13 +303,13 @@ async function refreshAuth() {
       }
     } else {
       // Sem sessão: a tela de login obrigatória cobre tudo (nada de botão "Entrar" solto na navbar).
-      usuario = null; adminLogado = false;
+      usuario = null; adminLogado = false; study.clear();
       if (area) area.innerHTML = '';
       $('nav-admin').style.display = 'none';
       $('nav-historico').style.display = 'none';
     }
   } catch {
-    usuario = null; adminLogado = false;
+    usuario = null; adminLogado = false; study.clear();
     const area = $('auth-area');
     if (area) area.innerHTML = '';
   }
@@ -480,6 +484,7 @@ async function carregarSalas() {
       </div>`;
     }).join('');
     filtrarSalas();
+    if(usuario) study.refresh(salasCache);
   } catch {
     grid.innerHTML = '';
     if (statusEl) statusEl.textContent = 'Erro';
@@ -496,7 +501,7 @@ $('salas-grid')?.addEventListener('click', (ev) => {
   const id = btn.dataset.room;
   const sala = salasCache.find((s) => s.id === id);
   if (btn.dataset.acao === 'entrar') {
-    if (sala && sala.status === 'ACTIVE') { tryEntrar(id, sala.nome); }
+    if (sala && sala.status === 'ACTIVE') { study.prepare(id); }
     else if (sala) { mostrarAviso(sala.status === 'CLOSED' ? 'Esta sala está encerrada.' : 'Esta sala ainda não foi aberta. Aguarde o administrador ativá-la.'); }
   } else if (btn.dataset.acao === 'ranking') {
     abrirRanking(id);
@@ -529,7 +534,7 @@ $('exec-sair')?.addEventListener('click', () => {
   const emAndamento = exame && exame.questoes.length > exame.atual;
   limparExecucao();
   mostrarHome();
-  if (emAndamento) mostrarAviso('Tentativa pausada — você pode retomar depois clicando em "Começar simulado" na sala.');
+  if (emAndamento) mostrarAviso('Estudo pausado. Use “Retomar estudo” no seu painel para continuar.');
 });
 
 function exigirLogin(fn) {
@@ -749,25 +754,17 @@ async function carregarResultado(roomId, roomNome) {
     }
     const res = d.resultado;
     const nome = roomNome || (salasCache.find((s) => s.id === roomId) || {}).nome || 'Simulado';
-    // total de participantes para "posição X de Y"
-    let totalRank = null;
-    try {
-      const rk = await api(`/api/rooms/${roomId}/ranking`);
-      if (rk.r.ok) totalRank = rk.d.total;
-    } catch { /* opcional */ }
     window.__resRoomId = roomId;
     resumoEl.innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap">
         <div>
-          <h2>Resultado</h2>
+          <h2>O que este estudo mostrou</h2>
           <p style="color:var(--muted); font-size:0.9rem">${escapeHTML(nome)} · ${fmtData(d.attempt?.finalizado_em || d.attempt?.iniciado_em || '')}</p>
         </div>
       </div>
       <div class="grid-metricas" style="margin-top:14px">
         <div class="card metrica"><small>Acertos</small><strong>${res.acertos} <span>/ ${res.total}</span></strong></div>
         <div class="card metrica"><small>Erros</small><strong style="color:var(--erro)">${res.erros}</strong></div>
-        <div class="card metrica"><small>Pontuação</small><strong>${res.pontuacao} pts</strong></div>
-        <div class="card metrica"><small>Posição</small><strong>${res.posicao}${totalRank !== null ? ' de ' + totalRank : ''}</strong></div>
         <div class="card metrica metrica-destaque"><small>Aproveitamento</small><strong>${res.aproveitamento}%</strong></div>
         <div class="card metrica"><small>Tempo total</small><strong class="num-mono">${fmtTempo(res.tempoTotal)}</strong></div>
       </div>`;
@@ -889,6 +886,7 @@ async function abrirHistorico() {
   listaEl.innerHTML = '';
   try {
     const [sRes, hRes] = await Promise.all([api('/api/me/stats'), api('/api/me/history')]);
+    if(!sRes.r.ok || !hRes.r.ok) throw new Error('history');
     const st = sRes.d || {};
     const hist = (hRes.d && hRes.d.history) || [];
     const totalSubs = Object.keys(st.porAssunto || {}).length;
@@ -902,8 +900,6 @@ async function abrirHistorico() {
         <div class="card metrica"><small>Simulados</small><strong>${st.totalSimulados || 0}</strong></div>
         <div class="card metrica"><small>Taxa de acerto</small><strong>${st.taxaAcerto || 0}%</strong></div>
         <div class="card metrica"><small>Questões respondidas</small><strong>${st.questoesRespondidas || 0}</strong></div>
-        <div class="card metrica"><small>Pontuação total</small><strong>${st.pontuacaoTotal || 0}</strong></div>
-        <div class="card metrica"><small>Melhor posição</small><strong>${st.melhorPosicao ? st.melhorPosicao + 'º' : '—'}</strong></div>
         <div class="card metrica"><small>Assuntos</small><strong>${totalSubs}</strong></div>
       </div>
       ${fraseOrient}
@@ -935,8 +931,8 @@ async function abrirHistorico() {
           <small style="color:var(--muted)">${fmtData(h.finalizado_em)}</small>
         </div>
         <span class="badge">${h.acertos}/${h.total} <span style="opacity:0.7">· ${h.porcentagem}%</span></span>
-        <small class="mono" style="color:var(--muted)">${h.pontuacao} pts</small>
-        <small class="mono" style="color:var(--muted)">${h.posicao}º de ${h.total_participantes}</small>
+
+
         <button class="btn btn-ghost" style="padding:6px 12px; font-size:0.85rem" data-acao="ver-resultado" data-room="${escapeHTML(h.room_id)}">Ver resultado</button>
       </div>`).join('');
   } catch {
@@ -1229,7 +1225,7 @@ function abrirResetSeToken() {
 }
 async function sair() {
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } catch { /* segue */ }
-  usuario = null; adminLogado = false;
+  usuario = null; adminLogado = false; study.clear();
   limparExecucao();
   document.body.classList.remove('em-prova');
   menuAberto(false);

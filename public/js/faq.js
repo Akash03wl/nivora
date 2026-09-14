@@ -10,7 +10,7 @@ export const PERGUNTAS_FAQ = [
   {
     id: 'faq-perguntas',
     pergunta: 'Como as perguntas são criadas?',
-    resposta: 'Uma IA gera as questões a partir do assunto que o administrador da sala informa, e elas passam por uma revisão antes de a sala abrir pra valer.'
+    resposta: 'Os simulados ENEM contêm questões autorais de preparação, com explicações. Não são cópias de provas oficiais nem uma previsão da sua nota. As provas originais estão disponíveis no link do Inep no rodapé.'
   },
   {
     id: 'faq-conta',

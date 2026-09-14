@@ -7,6 +7,32 @@ type Env = { DB: D1Database };
 
 export const history = new Hono<{ Bindings: Env }>();
 
+// Painel pessoal: nenhuma resposta de tentativa em andamento é revelada.
+history.get('/study', async (c) => {
+  const user = await usuarioDaSessao(c.env.DB, c.req.raw);
+  if (!user) return c.json({ erro: 'Não autenticado.' }, 401);
+  c.header('Cache-Control', 'private, no-store');
+  const uid = (user as any).id;
+  const ongoing = await todas(c.env.DB, `SELECT r.id, r.nome, r.materia_id,
+    (SELECT COUNT(*) FROM answers WHERE attempt_id=a.id) respondidas,
+    (SELECT COUNT(*) FROM questions WHERE room_id=r.id) total
+    FROM attempts a JOIN rooms r ON r.id=a.room_id
+    WHERE a.user_id=? AND a.status='em_andamento' AND r.status='ACTIVE'
+    ORDER BY a.iniciado_em DESC LIMIT 5`, uid);
+  const completed = await todas(c.env.DB, "SELECT room_id FROM attempts WHERE user_id=? AND status='finalizada'", uid);
+  const review = await todas(c.env.DB, `SELECT q.id, q.enunciado, q.assunto, q.explicacao,
+    r.id room_id, r.nome room_nome, r.materia_id, q.correta_idx, ans.alternativa_idx
+    FROM attempts a JOIN rooms r ON r.id=a.room_id JOIN questions q ON q.room_id=r.id
+    LEFT JOIN answers ans ON ans.attempt_id=a.id AND ans.question_id=q.id
+    WHERE a.user_id=? AND a.status='finalizada' AND COALESCE(ans.correta,0)=0
+    ORDER BY a.finalizado_em DESC, q.ordem LIMIT 100`, uid);
+  const options = review.length ? await todas(c.env.DB, `SELECT question_id,texto,ordem FROM question_options
+    WHERE question_id IN (${review.map(()=>'?').join(',')}) ORDER BY ordem`, ...review.map((q:any)=>q.id)) : [];
+  return c.json({ ongoing, completed:completed.map((a:any)=>a.room_id), review:review.map((q:any)=>({
+    ...q, alternativas:options.filter((o:any)=>o.question_id===q.id).map((o:any)=>({texto:o.texto,ordem:o.ordem}))
+  })) });
+});
+
 // GET /api/me/history — lista de tentativas finalizadas do usuário
 history.get('/history', async (c) => {
   const user = await usuarioDaSessao(c.env.DB, c.req.raw);
