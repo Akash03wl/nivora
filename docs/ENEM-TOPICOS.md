@@ -38,3 +38,4 @@ Para suspender o lote, arquivar as novas salas no painel, preservando tentativas
 
 89 testes passaram; tipos, sintaxe do frontend e build verificados. No navegador local, Porcentagem foi concluído com 5/5 e as cinco explicações exibidas, sem erros ou avisos no console. A busca por genetica encontrou Genética mendeliana. Validação de navegador por amostragem, não execução manual dos 24 simulados.
 
+Publicação concluída em 17/09/2026 via importação aditiva no D1. Consultas remotas confirmaram 36 simulados ativos ENEM, 180 questões e 24 salas do lote novo. A página pública mostrou 36 salas abertas. Não foi realizado teste autenticado em produção; o fluxo completo foi testado somente no ambiente local.
